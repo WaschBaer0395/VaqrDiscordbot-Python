@@ -40,7 +40,7 @@ scheduler = BackgroundScheduler()
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 
-bot = commands.Bot(command_prefix='m!')
+bot = commands.Bot(command_prefix='v!')
 
 path = 'cogs.'
 extensions = [x.replace('.py', '') for x in os.listdir(os.getcwd()+'/src/cogs/') if x.endswith('.py')]
