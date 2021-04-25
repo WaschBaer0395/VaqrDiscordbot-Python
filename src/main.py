@@ -40,7 +40,7 @@ scheduler = BackgroundScheduler()
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 
-bot = commands.Bot(command_prefix='m!')
+bot = commands.Bot(command_prefix='v!')
 
 path = 'cogs.'
 extensions = [x.replace('.py', '') for x in os.listdir(os.getcwd()+'/src/cogs/') if x.endswith('.py')]
@@ -95,16 +95,6 @@ async def on_command_error(ctx, error):
     # get the original exception
     error = getattr(error, 'original', error)
 
-    if isinstance(error, commands.BotMissingPermissions):
-        missing = [perm.replace('_', ' ').replace('guild', 'server').title() for perm in error.missing_perms]
-        if len(missing) > 2:
-            fmt = '{}, and {}'.format("**, **".join(missing[:-1]), missing[-1])
-        else:
-            fmt = ' and '.join(missing)
-        _message = '```I need the **{}** permission(s) to run this command.```'.format(fmt)
-        await ctx.send(_message)
-        return
-
     if isinstance(error, commands.DisabledCommand):
         await ctx.send('```This command has been disabled.```')
         return
@@ -113,13 +103,16 @@ async def on_command_error(ctx, error):
         await ctx.send("```This command is on cooldown, please retry in {}s.```".format(math.ceil(error.retry_after)))
         return
 
-    if isinstance(error, commands.MissingPermissions):
+    if isinstance(error, commands.MissingPermissions) or isinstance(error, commands.BotMissingPermissions):
         missing = [perm.replace('_', ' ').replace('guild', 'server').title() for perm in error.missing_perms]
         if len(missing) > 2:
             fmt = '{}, and {}'.format("**, **".join(missing[:-1]), missing[-1])
         else:
             fmt = ' and '.join(missing)
-        _message = '```You need the **{}** permission(s) to use this command.```'.format(fmt)
+        if isinstance(error, commands.BotMissingPermissions):
+            _message = '```I need the **{}** permission(s) to run this command.```'.format(fmt)
+        else:
+            _message = '```You need the **{}** permission(s) to use this command.```'.format(fmt)
         await ctx.send(_message)
         return
 
@@ -143,6 +136,7 @@ async def on_command_error(ctx, error):
     print('Ignoring exception in command {}:'.format(ctx.command), file=sys.stderr)
 
     traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
+
 
 
 def format_command_help(ctx, cmd):
@@ -190,4 +184,6 @@ async def reload(ctx, cog):
     else:
         await ctx.send(f"Reloaded the {cog} cog successfully :white_check_mark:")
 
+print('Bot is connecting')
 bot.run(TOKEN)
+print('Bot is connected')
