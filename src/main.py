@@ -22,14 +22,15 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
 import asyncio
+import configparser
 import inspect
 import math
 import os
 import sys
 import traceback
-
-
 import discord
+
+from src.ext.paginator import PaginatorSession
 from src.ext import utils
 from discord.ext import commands
 from dotenv import load_dotenv
@@ -49,7 +50,7 @@ def init_config():
     print('initializing config')
     config = configparser.ConfigParser()
     try:
-        config.read_file(open('settings.ini'))
+        config.read('settings.ini')
         if config.has_section('BOT'):
             global TOKEN
             global PREFIX
@@ -62,7 +63,6 @@ def init_config():
                   'Token:' + config.get('BOT', 'Token') + '\n')
         else:
             print('writing default config')
-            config = configparser.ConfigParser()
             config['BOT'] = \
                 {
                     'Name': 'ENTER A NAME HERE',
@@ -105,6 +105,7 @@ def load_extensions(cogs, _path='cogs.'):
 
 
 load_extensions(extensions)
+bot.remove_command('help')
 version = "v1.0.0"
 
 
@@ -206,6 +207,87 @@ def format_command_help(ctx, cmd):
     return em
 
 
+def format_cog_help(ctx, cog):
+    '''Format help for a cog'''
+    signatures = []
+    color = discord.Color.green()
+    em = discord.Embed(color=color, description=f'*{inspect.getdoc(cog)}*')
+    em.title = type(cog).__name__.replace('_', ' ')
+    cc = []
+    for cmd in bot.commands:
+        if not cmd.hidden:
+            if cmd.cog is cog:
+                cc.append(cmd)
+                signatures.append(len(cmd.name) + len(ctx.prefix))
+    max_length = max(signatures)
+    abc = sorted(cc, key=lambda x: x.name)
+    cmds = ''
+    for c in abc:
+        cmds += f'`{ctx.prefix + c.name:<{max_length}} '
+        cmds += f'{c.short_doc:<{max_length}}`\n'
+    em.add_field(name='Commands', value=cmds)
+
+    return em
+
+
+@bot.command()
+async def help(ctx, *, command: str=None):
+    '''Shows this message'''
+
+    if command is not None:
+        aliases = {
+            'clash of clans': 'Clash_of_Clans',
+            'coc': 'Clash_of_Clans',
+            'cr': 'Clash_Royale',
+            'Clash Of Clans': 'Clash_of_Clans',
+            'utils': 'Utility'
+        }
+
+        if command.lower() in aliases.keys():
+            command = aliases[command]
+
+        cog = bot.get_cog(command.replace(' ', '_').title())
+        cmd = bot.get_command(command)
+        if cog is not None:
+            em = format_cog_help(ctx, cog)
+        elif cmd is not None:
+            em = format_command_help(ctx, cmd)
+        else:
+            await ctx.send('No commands found.')
+        return await ctx.send(embed=em)
+
+    pages = []
+    for cog in bot.cogs.values():
+        em = format_cog_help(ctx, cog)
+        pages.append(em)
+    em = format_bot_help(ctx)
+    pages.append(em)
+
+    p_session = PaginatorSession(ctx, footer=f'Type {ctx.prefix}help command for more info on a command.', pages=pages)
+    await p_session.run()
+
+
+def format_bot_help(ctx):
+    signatures = []
+    fmt = ''
+    commands = []
+    for cmd in bot.commands:
+        if not cmd.hidden:
+            if type(cmd.cog).__name__ == 'NoneType':
+                commands.append(cmd)
+                signatures.append(len(cmd.name) + len(ctx.prefix))
+    max_length = max(signatures)
+    abc = sorted(commands, key=lambda x: x.name)
+    for c in abc:
+        fmt += f'`{ctx.prefix + c.name:<{max_length}} '
+        fmt += f'{c.short_doc:<{max_length}}`\n'
+    em = discord.Embed(title='Bot', color=discord.Color.green())
+    em.description = '*Commands for the main bot.*'
+    em.add_field(name='Commands', value=fmt)
+
+    return em
+
+
 @bot.command()
 async def ping(ctx):
     '''Pong! Get the bot's response time'''
@@ -237,5 +319,6 @@ async def reload(ctx, cog):
         await ctx.send(f"An error occured while reloading {cog}, error details: \n ```{e}```")
     else:
         await ctx.send(f"Reloaded the {cog} cog successfully :white_check_mark:")
+
 
 init_bot()

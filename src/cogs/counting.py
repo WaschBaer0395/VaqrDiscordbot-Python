@@ -3,6 +3,7 @@ import json
 import discord
 import configparser
 from discord.ext import commands
+from distutils.util import strtobool
 
 channelSet = False
 channelName = None
@@ -24,16 +25,18 @@ class Counting(commands.Cog):
             return
         else:
             config = check_config()
-
-            if config.get('COUNTING', 'channelSet'):
-                await ctx.send('```Are you sure that you want to reset the counting?```')
+            if bool(strtobool(config.get('COUNTING', 'channelSet'))):
+                msg = await ctx.send('```Are you sure that you want to reset the counting?```')
+                custom_emoji = get(ctx.message.server.emojis, name="custom_emoji")
+                reaction = await ctx.wait_for_reaction(['\N{SMILE}', custom_emoji], msg)
+                await ctx.say("You responded with {}".format(reaction.emoji))
             else:
-                config.set('COUNTING','channelSet', str(True))
-                config.set('COUNTING', 'Name', channel[0].name)
-                config.set('COUNTING','ID', channel[0].id)
-                config.set('COUNTING', 'currenCount', str(0))
+                config.set('COUNTING', 'channelSet', str(True))
+                config.set('COUNTING', 'Name', str(channel[0].name))
+                config.set('COUNTING', 'ID', str(channel[0].id))
+                config.set('COUNTING', 'currentCount', str(0))
                 try:
-                    with open('settings.ini', 'a+') as configfile:
+                    with open('settings.ini', 'w+') as configfile:
                         config.write(configfile)
                 except Exception as e:
                     await ctx.send('```' + str(e) + '```')
@@ -44,7 +47,7 @@ class Counting(commands.Cog):
 
 def check_config():
     config = configparser.ConfigParser()
-    config.read_file(open('settings.ini'))
+    config.read('settings.ini')
 
     # checking for existing config
     if config.has_section('COUNTING'):
@@ -54,7 +57,6 @@ def check_config():
         channelSet = commands.Bot(config.get('COUNTING', 'channelSet'))
     else:
         # writing default config, incase none has been found
-        config = configparser.ConfigParser()
         config['COUNTING'] = \
             {
                 'channelSet': 'False',
