@@ -22,6 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
 import asyncio
+import configparser
 import inspect
 import math
 import os
@@ -35,15 +36,57 @@ from discord.ext import commands
 from dotenv import load_dotenv
 from apscheduler.schedulers.background import BackgroundScheduler
 
-
 scheduler = BackgroundScheduler()
 load_dotenv()
-TOKEN = os.getenv('DISCORD_TOKEN')
-
-bot = commands.Bot(command_prefix='m!')
+TOKEN = 'None'
+PREFIX = '!'
+bot = commands.Bot(PREFIX)
 
 path = 'cogs.'
 extensions = [x.replace('.py', '') for x in os.listdir(os.getcwd()+'/src/cogs/') if x.endswith('.py')]
+
+
+def init_config():
+    print('initializing config')
+    config = configparser.ConfigParser()
+    try:
+        config.read_file(open('settings.ini'))
+        if config.has_section('BOT'):
+            global TOKEN
+            global PREFIX
+            TOKEN = config.get('BOT', 'Token')
+            PREFIX = config.get('BOT', 'Prefix')
+            bot.command_prefix = PREFIX
+            print('config loaded \n'
+                  'Name: ' + config.get('BOT', 'Name') + '\n'
+                  'Prefix: ' + config.get('BOT', 'Prefix') + '\n'
+                  'Token:' + config.get('BOT', 'Token') + '\n')
+        else:
+            print('writing default config')
+            config = configparser.ConfigParser()
+            config['BOT'] = \
+                {
+                    'Name': 'ENTER A NAME HERE',
+                    'Token': 'ENTER TOKEN HERE',
+                    'Prefix': '!',
+                }
+            try:
+                with open('settings.ini', 'a+') as configfile:
+                    config.write(configfile)
+            except Exception as e:
+                print('```error writing config```')
+    except OSError as e:
+        print('```error loading configfile ```')
+
+
+def init_bot():
+    init_config()
+    print('Bot is connecting')
+    try:
+        bot.run(TOKEN)
+        print('Bot is connected')
+    except AttributeError as pb:
+        print('no valid token entered, please try again')
 
 
 def load_extension(cog, __path='cogs.'):
@@ -74,6 +117,19 @@ async def send_cmd_help(ctx):
 
 
 @bot.event
+async def on_member_join(member):
+    await member.create_dm()
+    await member.dm_channel.send(
+        f'Hi {member.name}, welcome to my Discord server!'
+    )
+
+
+@bot.event
+async def on_ready(): # When the bot starts
+    print(f"Bot online and logged in as {bot.user}")
+
+
+@bot.event
 async def on_command_error(ctx, error):
 
     send_help = (commands.MissingRequiredArgument, commands.BadArgument, commands.TooManyArguments, commands.UserInputError)
@@ -95,16 +151,6 @@ async def on_command_error(ctx, error):
     # get the original exception
     error = getattr(error, 'original', error)
 
-    if isinstance(error, commands.BotMissingPermissions):
-        missing = [perm.replace('_', ' ').replace('guild', 'server').title() for perm in error.missing_perms]
-        if len(missing) > 2:
-            fmt = '{}, and {}'.format("**, **".join(missing[:-1]), missing[-1])
-        else:
-            fmt = ' and '.join(missing)
-        _message = '```I need the **{}** permission(s) to run this command.```'.format(fmt)
-        await ctx.send(_message)
-        return
-
     if isinstance(error, commands.DisabledCommand):
         await ctx.send('```This command has been disabled.```')
         return
@@ -113,13 +159,16 @@ async def on_command_error(ctx, error):
         await ctx.send("```This command is on cooldown, please retry in {}s.```".format(math.ceil(error.retry_after)))
         return
 
-    if isinstance(error, commands.MissingPermissions):
+    if isinstance(error, commands.MissingPermissions) or isinstance(error, commands.BotMissingPermissions):
         missing = [perm.replace('_', ' ').replace('guild', 'server').title() for perm in error.missing_perms]
         if len(missing) > 2:
             fmt = '{}, and {}'.format("**, **".join(missing[:-1]), missing[-1])
         else:
             fmt = ' and '.join(missing)
-        _message = '```You need the **{}** permission(s) to use this command.```'.format(fmt)
+        if isinstance(error, commands.BotMissingPermissions):
+            _message = '```I need the **{}** permission(s) to run this command.```'.format(fmt)
+        else:
+            _message = '```You need the **{}** permission(s) to use this command.```'.format(fmt)
         await ctx.send(_message)
         return
 
@@ -190,4 +239,4 @@ async def reload(ctx, cog):
     else:
         await ctx.send(f"Reloaded the {cog} cog successfully :white_check_mark:")
 
-bot.run(TOKEN)
+init_bot()
