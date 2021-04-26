@@ -5,6 +5,8 @@ import configparser
 from discord.ext import commands
 from distutils.util import strtobool
 
+from ext.confirmer import ConfirmerSession
+
 channelSet = False
 channelName = None
 channelID = None
@@ -26,10 +28,13 @@ class Counting(commands.Cog):
         else:
             config = check_config()
             if bool(strtobool(config.get('COUNTING', 'channelSet'))):
-                msg = await ctx.send('```Are you sure that you want to reset the counting?```')
-                custom_emoji = get(ctx.message.server.emojis, name="custom_emoji")
-                reaction = await ctx.wait_for_reaction(['\N{SMILE}', custom_emoji], msg)
-                await ctx.say("You responded with {}".format(reaction.emoji))
+                #msg = await ctx.send('```Are you sure that you want to reset the counting?```')
+                
+                embed = discord.Embed(title="Channel Confirm", colour=discord.Colour(0xbf212f), description="Are you sure you want to use this channel?")
+                c_session = ConfirmerSession(ctx, footer=f'Type {ctx.prefix}help command for more info on a command.', page=embed)
+                response = await c_session.run()
+
+                await ctx.send("You responded with {}".format(response))
             else:
                 config.set('COUNTING', 'channelSet', str(True))
                 config.set('COUNTING', 'Name', str(channel[0].name))

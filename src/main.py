@@ -30,8 +30,8 @@ import sys
 import traceback
 import discord
 
-from src.ext.paginator import PaginatorSession
-from src.ext import utils
+from ext.paginator import PaginatorSession
+from ext import utils
 from discord.ext import commands
 from dotenv import load_dotenv
 from apscheduler.schedulers.background import BackgroundScheduler
