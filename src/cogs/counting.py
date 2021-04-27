@@ -78,6 +78,28 @@ class Counting(commands.Cog):
                                               f" with an id of {channel[0].id}", colour=discord.Colour(0x37b326))
             await embedctx.edit(embed=embed)
 
+    @commands.command(aliases=['c'])
+    async def count(self, ctx, args='help'):
+        config = check_config()
+        if int(config.get('COUNTING', 'id')) != ctx.channel.id:
+            if args == 'help' or None:
+                embed = discord.Embed(title="Counting usage",
+                                      description=f"\n"
+                                                  f"`v!c argument` \n"
+                                                  f"or\n"
+                                                  f"`v!count argument`\n"
+                                                  f"\n"
+                                                  f"**Arguments:** \n"
+                                                  f"\n"
+                                                  f"`list`\n`top10`\n`leaderboard` \n"
+                                                  f"for showing the leaderboard \n"
+                                                  f"\n"
+                                                  f"**Example:**  `v!c leaderboard`",
+                                      colour=discord.Colour(0x37b326))
+                await ctx.send(embed=embed)
+            if args == 'leaderboard' or 'top10' or 'list':
+                await self.get_top10(ctx)
+
     @commands.Cog.listener()
     async def on_message(self, message):
         try:
@@ -89,30 +111,32 @@ class Counting(commands.Cog):
                     if int(config.get('COUNTING', 'currentCount')) + 1 == int(message.content):
                         guild = self.bot.get_guild(message.guild.id)
                         channel = guild.get_channel(message.channel.id)
-
+                        xp_bonus = 1
                         if int(message.content) % 1000 == 420:
                             msg = str(message.content)[:-3]
                             embed = discord.Embed(description=f"" + msg + "**420** BlazeIt :potted_plant:",
                                                   colour=discord.Colour(0x21afbf))
                             await channel.send(embed=embed)
+                            xp_bonus = 3
                         elif int(message.content) % 100 == 69:
                             msg = str(message.content)[:-2]
-                            embed = discord.Embed(description=f"" + msg + "**69** LUL :point_right: :ok_hand:",
+                            embed = discord.Embed(description=f"" + msg + "**69** LUL :six::nine:",
                                                   colour=discord.Colour(0x21afbf))
                             await channel.send(embed=embed)
+                            xp_bonus = 3
 
                         config.set('COUNTING', 'currentCount', message.content)
                         save_config(config)
                         if not self.check_id(message.author.id):
                             self.reg_user(message.author)
                         else:
-                            self.add_count(message.author.id)
+                            self.add_count(message.author.id, xp_bonus)
                     else:
                         raise WrongCount
                 else:
                     raise WrongCount
         except WrongCount:
-            if not message.author.id == self.bot.user.id:
+            if not self.check_bot(message):
                 await message.delete()
                 self.wrong_count(message.author.id)
 
@@ -132,32 +156,62 @@ class Counting(commands.Cog):
         args = (int(author.id), str(author.display_name), int(author.discriminator), str(author.nick), 1)
         self.db.execute_statement(statement, args)
 
-    def add_count(self, authorid):
+    def add_count(self, authorid, xp_bonus):
         statement = '''SELECT * FROM Counting WHERE UserID = ?'''
         args = (str(authorid),)
         ret = self.db.execute_statement(statement, args)[1][0]
         count = ret[4]
         curr_exp = ret[6]
         curr_level = ret[7]
-        statement = '''UPDATE Counting SET Counts=?'''
-        args = (str(count + 1),)
+        statement = '''UPDATE Counting SET Counts=? WHERE UserID=?'''
+        args = (str(count + 1), str(authorid),)
         self.db.execute_statement(statement, args)
-        self.add_xp(curr_exp, curr_level)
+        self.add_xp(curr_exp, authorid, xp_bonus)
 
-    def add_xp(self, curr_exp, curr_level):
-        newexp = curr_exp + 10
+    def add_xp(self, curr_exp, authorid, xp_bonus):
+        newexp = curr_exp + 10*xp_bonus
         newlevel = calc_lvl(newexp)
-        statement = '''UPDATE Counting Set Experience=?, Level=?'''
-        args = (str(newexp), str(newlevel),)
+        statement = '''UPDATE Counting Set Experience=?, Level=? WHERE UserID=?'''
+        args = (str(newexp), str(newlevel), str(authorid),)
         self.db.execute_statement(statement, args)
 
     def wrong_count(self, authorid):
+        if not self.check_id(authorid):
+            return
         statement = '''SELECT * FROM Counting WHERE UserID = ?'''
         args = (str(authorid),)
-        ret = self.db.execute_statement(statement, args)[1][0][5]
+        ret = self.db.execute_statement(statement, args)
         statement = '''UPDATE Counting SET MissCounts=? WHERE UserID=?'''
-        args = (str(ret + 1), str(authorid))
+        args = (str(ret[1][0][5] + 1), str(authorid))
         self.db.execute_statement(statement, args)
+
+    def check_bot(self, message):
+        if message.author.id == self.bot.user.id:
+            return True
+        else:
+            return False
+
+    async def get_top10(self, ctx):
+        statement = '''
+                    SELECT UserID,UserName,Counts,MissCounts,Level,Experience
+                    FROM Counting 
+                    ORDER BY Counts DESC LIMIT 10'''
+        ret = self.db.execute_statement(statement)[1]
+        description = ''
+        c = 1
+        for r in ret:
+            n_lvl_xp = calc_exp(r[4]+1)
+            description = description + f"`#{c}` `lvl {str(r[4])}` <@{str(r[0])}> " \
+                                        f"- `{str(r[2])}` counts " \
+                                        f"- `{str(r[3])}` miscounts " \
+                                        f"- `{str(r[5])} / {n_lvl_xp}xp` \n"
+            c = c + 1
+
+        embed = discord.Embed(
+            title='TOP 10 Counters',
+            description=description,
+            colour=discord.Colour(0x37b326))
+        await ctx.send(embed=embed)
 
 
 def check_config():

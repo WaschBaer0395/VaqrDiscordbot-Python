@@ -34,7 +34,7 @@ class SqlLite():
         except Error as e:
             print(e)
 
-    def execute_statement(self, statement, parameters):
+    def execute_statement(self, statement, parameters=''):
         """
         Create a new project into the projects table
         :param statement: statement to be executed
