@@ -121,7 +121,6 @@ class Counting(commands.Cog):
     def check_id(self, userid):
         statement = '''SELECT EXISTS(SELECT 1 FROM Counting WHERE UserID=?)'''
         count = self.db.execute_statement(statement, (userid,))
-        print(count[1][0][0])
         if count[1][0][0] >= 1:
             return True
         else:
