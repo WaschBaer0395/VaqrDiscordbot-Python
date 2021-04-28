@@ -70,36 +70,7 @@ class Config(commands.Cog):
             await self.bot.db.config.update({'_id': str(ctx.guild.id)}, {'$set': config})
             await ctx.send('Your welcome message has been successfully set.')
 
-    @commands.command(aliases=['setleave', 'leavemsg', 'leavemessage', 'leaveset'], no_pm=True)
-    @commands.has_permissions(manage_guild=True)
-    async def leave(self, ctx, type):
-        '''Enable or disable a leave message for your guild'''
-        def pred(m):
-            return m.author == ctx.author and m.channel == ctx.message.channel
-
-        config = await self.bot.db.config.find_one({'_id': str(ctx.guild.id)})
-        if not config:
-            config = {'_id': str(ctx.guild.id), 'leavetype': False}
-
-        if type.lower() in ('n', 'no', 'disabled', 'disable', 'off'):
-            config['leavetype'] = False
-            await self.bot.db.config.update({'_id': str(ctx.guild.id)}, {'$set': config})
-            await ctx.send('Leave messages disabled for this guild.')
-        else:
-            config['leavetype'] = True
-            await ctx.send('Which channel do you want the leave messages to be set to? Use a channel mention.')
-            channel = await self.bot.wait_for('message', check=pred, timeout=60.0)
-            id = channel.content.strip('<#').strip('>')
-            if id == channel.content:
-                return await ctx.send('Please mention a channel.')
-            config['leavechannel'] = str(id)
-            await ctx.send('What do you want the message to be?\nUsage:```\n{name}: Replaces this with the user\'s name.\n{server}: Server name.\n{membercount}: Returns the number of members in the guild.\n```')
-            msg = await self.bot.wait_for('message', check=pred, timeout=60.0)
-            config['leave'] = str(msg.content).replace('"', '\"')
-            await self.bot.db.config.update({'_id': str(ctx.guild.id)}, {'$set': config})
-            await ctx.send('Your leave message has been successfully set.')
-
-
+   
     # ------------Welcome and leave----------------
 
     async def on_member_join(self, m):
