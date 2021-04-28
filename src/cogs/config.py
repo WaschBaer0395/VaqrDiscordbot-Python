@@ -99,31 +99,6 @@ class Config(commands.Cog):
             await self.bot.db.config.update({'_id': str(ctx.guild.id)}, {'$set': config})
             await ctx.send('Your leave message has been successfully set.')
 
-    @commands.command(aliases=['mod-log'])
-    @commands.has_permissions(view_audit_log=True)
-    async def modlog(self, ctx, type):
-        '''Toggle mod-logs for your guild'''
-        def pred(m):
-            return m.author == ctx.author and m.channel == ctx.message.channel
-
-        config = await self.bot.db.config.find_one({'_id': str(ctx.guild.id)})
-        if not config:
-            config = {'_id': str(ctx.guild.id), 'logtype': False}
-
-        if type.lower() in ('n', 'no', 'disabled', 'disable', 'off'):
-            config['logtype'] = False
-            await self.bot.db.config.update({'_id': str(ctx.guild.id)}, {'$set': config})
-            await ctx.send('Mod-logs are disabled for this guild.')
-        else:
-            config['logtype'] = True
-            await ctx.send('Which channel do you want the events to be logged in? Use a channel mention.')
-            channel = await self.bot.wait_for('message', check=pred, timeout=60.0)
-            id = channel.content.strip('<#').strip('>')
-            if id == channel.content:
-                return await ctx.send('Please mention a channel.')
-            config['logchannel'] = str(id)
-            await self.bot.db.config.update({'_id': str(ctx.guild.id)}, {'$set': config})
-            await ctx.send(f'Mod-logs have been successfully set in <#{id}>')
 
     # ------------Welcome and leave----------------
 
