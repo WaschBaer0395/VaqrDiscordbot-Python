@@ -14,13 +14,16 @@ from distutils.util import strtobool
 
 from ext.music import Media
 
-async def audio_playing(ctx):
+async def audio_playing(ctx, respond=True):
     """Checks that audio is currently playing before continuing."""
     client = ctx.guild.voice_client
     if client and client.channel and client.source:
         return True
     else:
-        return await ctx.send("Not currently playing any audio.")
+        if(respond):
+            embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1), description="The queue is empty")
+            await ctx.send(embed=embed)
+        return False
 
 
 async def in_voice_channel(ctx):
@@ -30,7 +33,17 @@ async def in_voice_channel(ctx):
     if voice and bot_voice and voice.channel and bot_voice.channel and voice.channel == bot_voice.channel:
         return True
     else:
-       return await ctx.send("You need to be in the voice channel to do that.")
+        embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1), description="You need to be in the voice channel to do that.")
+        await ctx.send(embed=embed)
+        return False
+
+async def in_voice(ctx):
+    """Checks that the command sender is in the same voice channel as the bot."""
+    bot_voice = ctx.guild.voice_client
+    if bot_voice is not None and bot_voice.channel is not None:
+        return True
+    else:
+        return False
 
 
 async def is_audio_requester(ctx):
@@ -41,7 +54,9 @@ async def is_audio_requester(ctx):
     if permissions.administrator or state.is_requester(ctx.author):
         return True
     else:
-        return await ctx.send("You need to be the song requester to do that.")
+        embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1), description="You need to be the song requester to do that")
+        await ctx.send(embed=embed)
+        return False
 
 
 
@@ -51,7 +66,8 @@ class Music(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.states = {}
-        self.bot.add_listener(self.on_reaction_add, "on_reaction_add")
+        self.bot.add_listener(self.on_voice_state_update, "on_voice_state_update")
+
 
     def get_state(self, guild):
         """Gets the state for `guild`, creating it if it does not exist."""
@@ -65,31 +81,49 @@ class Music(commands.Cog):
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
     async def leave(self, ctx):
-        """Leaves the voice channel, if currently in one."""
+        """Leaves the voice channel"""
         client = ctx.guild.voice_client
         state = self.get_state(ctx.guild)
         if client and client.channel:
             await client.disconnect()
             state.playlist = []
             state.now_playing = None
-        else:
-            raise commands.CommandError("Not in a voice channel.")
 
     @commands.command(aliases=["resume"])
     @commands.guild_only()
-    @commands.check(audio_playing)
-    @commands.check(in_voice_channel)
     @commands.check(is_audio_requester)
     async def pause(self, ctx):
-        """Pauses any currently playing audio."""
-        client = ctx.guild.voice_client
-        self._pause_audio(client)
+        """Pauses the current media."""
 
-    def _pause_audio(self, client):
+        voice = await in_voice(ctx)
+        if voice is False:
+            if ctx.author.voice is not None and ctx.author.voice.channel is not None:
+                channel = ctx.author.voice.channel
+                await channel.connect()
+            else:
+                embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1), description="You need to be in the voice channel to do that.")
+                await ctx.send(embed=embed)
+
+        in_vc = await in_voice_channel(ctx)
+        is_playing = await audio_playing(ctx, respond=False)
+
+        state = self.get_state(ctx.guild)
+        if in_vc:
+            client = ctx.guild.voice_client
+            if is_playing and ctx.author.voice is not None and ctx.author.voice.channel is not None:
+                await self._pause_audio(ctx, client)
+            else:
+                self._play_song(client, state, state.now_playing)
+
+    async def _pause_audio(self, ctx, client):
         if client.is_paused():
             client.resume()
+            embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1), description="▶️ Music resumed")
+            await ctx.send(embed=embed)
         else:
             client.pause()
+            embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1), description="⏸️ Music paused")
+            await ctx.send(embed=embed)
 
     @commands.command(aliases=["vol", "v"])
     @commands.guild_only()
@@ -97,7 +131,7 @@ class Music(commands.Cog):
     @commands.check(in_voice_channel)
     @commands.check(is_audio_requester)
     async def volume(self, ctx, volume: int):
-        """Change the volume of currently playing audio (values 0-250)."""
+        """Change the media volume (values 0-250)."""
         state = self.get_state(ctx.guild)
 
         # make sure volume is nonnegative
@@ -115,14 +149,16 @@ class Music(commands.Cog):
 
         state.volume = float(volume) / 100.0
         client.source.volume = state.volume  # update the AudioSource's volume to match
+        embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1), description=f"Music volume set to {state.volume}%")
+        await ctx.send(embed=embed)
 
     @commands.command()
     @commands.guild_only()
     @commands.check(audio_playing)
     @commands.check(in_voice_channel)
     async def skip(self, ctx):
-        config = check_config()
         """Skips the currently playing song, or votes to skip it."""
+        config = check_config()
         state = self.get_state(ctx.guild)
         client = ctx.guild.voice_client
         if ctx.channel.permissions_for(
@@ -143,7 +179,8 @@ class Music(commands.Cog):
                 f"{ctx.author.mention} voted to skip ({len(state.skip_votes)}/{required_votes} votes)"
             )
         else:
-            raise commands.CommandError("Sorry, vote skipping is disabled.")
+            embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1), description="Vote to skip is disabled :(")
+            await ctx.send(embed=embed)
 
     def _vote_skip(self, channel, member):
         """Register a vote for `member` to skip the song playing."""
@@ -157,7 +194,7 @@ class Music(commands.Cog):
         if (float(len(state.skip_votes)) /
                 users_in_channel) >= config.get('MUSIC', 'vote_skip_ratio'):
             # enough members have voted to skip, so skip the song
-            logging.info(f"Enough votes, skipping...")
+            print(f"Enough votes, skipping...")
             channel.guild.voice_client.stop()
 
     def _play_song(self, client, state, song):
@@ -171,8 +208,7 @@ class Music(commands.Cog):
                 next_song = state.playlist.pop(0)
                 self._play_song(client, state, next_song)
             else:
-                asyncio.run_coroutine_threadsafe(client.disconnect(),
-                                                 self.bot.loop)
+                asyncio.run_coroutine_threadsafe(client.disconnect(), self.bot.loop)
 
         client.play(source, after=after_playing)
 
@@ -183,55 +219,101 @@ class Music(commands.Cog):
         """Displays information about the current song."""
         state = self.get_state(ctx.guild)
         message = await ctx.send("", embed=state.now_playing.get_embed())
-        await self._add_reaction_controls(message)
 
     @commands.command(aliases=["q", "playlist"])
     @commands.guild_only()
     async def queue(self, ctx):
-        """Display the current play queue."""
+        """Displays the current play queue."""
         state = self.get_state(ctx.guild)
-        await ctx.send(self._queue_text(state.playlist))
+        await ctx.send(embed=self._queue_text(state.playlist))
 
     def _queue_text(self, queue):
         """Returns a block of text describing a given song queue."""
+        embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1))
         if len(queue) > 0:
-            message = [f"{len(queue)} songs in queue:"]
-            message += [
-                f"  {index+1}. **{song.title}** (requested by **{song.requested_by.name}**)"
-                for (index, song) in enumerate(queue)
-            ]  # add individual songs
-            return "\n".join(message)
+            embed.description = f"{len(queue)} songs in the queue"
+            message = ''
+           
+            for index, song in enumerate(queue):
+                message += f"  `{index+1}.` **{song.title}** (requested by {song.requested_by.mention})\n"# add individual songs
+            embed.add_field(name='Song Queue', value=message)
+            return embed
         else:
-            return "The play queue is empty."
+            embed.description = "The queue is empty"
+            return embed
 
     @commands.command(aliases=["cq"])
     @commands.guild_only()
     @commands.check(audio_playing)
     @commands.has_permissions(administrator=True)
     async def clearqueue(self, ctx):
-        """Clears the play queue without leaving the channel."""
+        """Clears the play queue."""
         state = self.get_state(ctx.guild)
         state.playlist = []
 
-    @commands.command(aliases=["jq"])
+    @commands.command(aliases=["rem"])
     @commands.guild_only()
     @commands.check(audio_playing)
     @commands.has_permissions(administrator=True)
-    async def jumpqueue(self, ctx, song: int, new_index: int):
-        """Moves song at an index to `new_index` in queue."""
+    async def remove(self, ctx, *args):
+        """Remove a song at an index"""
+        state = self.get_state(ctx.guild)
+        
+        if(len(state.playlist) > 0):
+            if(len(args) > 0):
+                if(args[0] == "last"):
+                    index = len(state.playlist) - 1
+                    embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1), description=f"🗑️ Removed **{state.playlist[index].title}** from the queue")
+                    await ctx.send(embed=embed)
+                    state.playlist.pop()
+                if(args[0] == "next"):
+                    embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1), description=f"🗑️ Removed **{state.playlist[0].title}** from the queue")
+                    await ctx.send(embed=embed)
+                    state.playlist.pop(0)
+                
+                if(args[0].isnumeric()):
+                    index = int(args[0]) - 1
+                    if 0 <= index <= len(state.playlist):
+                        embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1), description=f"🗑️ Removed **{state.playlist[index].title}** from the queue")
+                        await ctx.send(embed=embed)
+                        state.playlist.pop(index)
+            else:
+                embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1), description=f"Specify the index for the song to remove (or use \"next\" and \"last\"")
+                await ctx.send(embed=embed)
+
+    @commands.command(aliases=["move"])
+    @commands.guild_only()
+    @commands.check(audio_playing)
+    async def jump(self, ctx, song: int, new_index: int):
+        """Moves song to an index. (usage: jump <old> <new>)"""
         state = self.get_state(ctx.guild)  # get state for this guild
-        if 1 <= song <= len(state.playlist) and 1 <= new_index:
+        if 0 <= song <= len(state.playlist) and 1 <= new_index:
             song = state.playlist.pop(song - 1)  # take song at index...
             state.playlist.insert(new_index - 1, song)  # and insert it.
 
-            await ctx.send(self._queue_text(state.playlist))
+            await ctx.send(embed=self._queue_text(state.playlist))
+        else:
+            raise commands.CommandError("You must use a valid index.")
+    
+    @commands.command(aliases=["priority"])
+    @commands.guild_only()
+    @commands.check(audio_playing)
+    @commands.has_permissions(administrator=True)
+    async def jumpqueue(self, ctx, song: int):
+        """Moves song at an index to next in queue."""
+        state = self.get_state(ctx.guild)  # get state for this guild
+        if 0 <= song <= len(state.playlist):
+            song = state.playlist.pop(song - 1)  # take song at index...
+            state.playlist.insert(0, song)  # and insert it.
+
+            await ctx.send(embed=self._queue_text(state.playlist))
         else:
             raise commands.CommandError("You must use a valid index.")
 
     @commands.command(aliases=["p"])
     @commands.guild_only()
     async def play(self, ctx, *, url):
-        """Plays audio hosted at <url> (or performs a search for <url> and plays the first result)."""
+        """Plays media hosted at <url> or conducts a search."""
 
         client = ctx.guild.voice_client
         state = self.get_state(ctx.guild)  # get the guild's state
@@ -246,7 +328,6 @@ class Music(commands.Cog):
             state.playlist.append(video)
             message = await ctx.send(
                 "Added to queue.", embed=video.get_embed())
-            await self._add_reaction_controls(message)
         else:
             if ctx.author.voice is not None and ctx.author.voice.channel is not None:
                 channel = ctx.author.voice.channel
@@ -258,60 +339,20 @@ class Music(commands.Cog):
                 client = await channel.connect()
                 self._play_song(client, state, video)
                 message = await ctx.send("", embed=video.get_embed())
-                await self._add_reaction_controls(message)
                 logging.info(f"Now playing '{video.title}'")
             else:
                 raise commands.CommandError(
                     "You need to be in a voice channel to do that.")
 
-    async def on_reaction_add(self, reaction, user):
-        """Respods to reactions added to the bot's messages, allowing reactions to control playback."""
-        config = check_config()
-        message = reaction.message
-        if user != self.bot.user and message.author == self.bot.user:
-            await message.remove_reaction(reaction, user)
-            if message.guild and message.guild.voice_client:
-                user_in_channel = user.voice and user.voice.channel and user.voice.channel == message.guild.voice_client.channel
-                permissions = message.channel.permissions_for(user)
-                guild = message.guild
-                state = self.get_state(guild)
-                if permissions.administrator or (
-                        user_in_channel and state.is_requester(user)):
-                    client = message.guild.voice_client
-                    if reaction.emoji == "⏯":
-                        # pause audio
-                        self._pause_audio(client)
-                    elif reaction.emoji == "⏭":
-                        # skip audio
-                        client.stop()
-                    elif reaction.emoji == "⏮":
-                        state.playlist.insert(
-                            0, state.now_playing
-                        )  # insert current song at beginning of playlist
-                        client.stop()  # skip ahead
-                elif reaction.emoji == "⏭" and config.get('MUSIC', 'vote_skip') and user_in_channel and message.guild.voice_client and message.guild.voice_client.channel:
-                    # ensure that skip was pressed, that vote skipping is
-                    # enabled, the user is in the channel, and that the bot is
-                    # in a voice channel
-                    voice_channel = message.guild.voice_client.channel
-                    self._vote_skip(voice_channel, user)
-                    # announce vote
-                    channel = message.channel
-                    users_in_channel = len([
-                        member for member in voice_channel.members
-                        if not member.bot
-                    ])  # don't count bots
-                    required_votes = math.ceil(
-                        config.get('MUSIC', 'vote_skip_ratio') * users_in_channel)
-                    await channel.send(
-                        f"{user.mention} voted to skip ({len(state.skip_votes)}/{required_votes} votes)"
-                    )
-
-    async def _add_reaction_controls(self, message):
-        """Adds a 'control-panel' of reactions to a message that can be used to control the bot."""
-        CONTROLS = ["⏮", "⏯", "⏭"]
-        for control in CONTROLS:
-            await message.add_reaction(control)
+    @commands.Cog.listener()
+    async def on_voice_state_update(self, member, before, after):
+        if before.channel != after.channel and member.id == 836383111935426621:
+            if before.channel != None and after.channel == None:
+                state = self.get_state(member.guild)
+                if state != None:
+                    client = member.guild.voice_client
+                    if(client != None):
+                        client.pause()
 
 
 def check_config():
