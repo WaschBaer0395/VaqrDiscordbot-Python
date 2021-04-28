@@ -104,8 +104,10 @@ class Counting(commands.Cog):
                                                   f"**Example:**  `v!c leaderboard`",
                                       colour=discord.Colour(0x37b326))
                 await ctx.send(embed=embed)
-            if args == 'leaderboard' or 'top10' or 'list':
+            elif args == 'leaderboard' or args == 'top10' or args == 'list':
                 await self.get_top10(ctx)
+            elif args == 'rank':
+                await self.show_rank(ctx)
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -137,7 +139,9 @@ class Counting(commands.Cog):
                         if not self.check_id(message.author.id):
                             self.reg_user(message.author)
                         else:
-                            self.add_count(message.author.id, xp_bonus)
+                            newlvl, lvlup,  = self.add_count(message.author.id, xp_bonus)
+                            if lvlup:
+                                await channel.send('<@' + str(message.author.id) + '> Congrats to the Lvl up, you reached LVL: ' + str(newlvl) + ' in counting')
                     else:
                         raise WrongCount
                 else:
@@ -148,6 +152,21 @@ class Counting(commands.Cog):
                 self.wrong_count(message.author.id)
 
             return
+
+    async def show_rank(self, ctx):
+        statement = ''' SELECT UserID,UserName,Counts,MissCounts,Level,Experience
+                        FROM Counting 
+                        WHERE UserID=?'''
+        args = (ctx.author.id,)
+        ret = self.db.execute_statement(statement, args)[1][0]
+
+        description = f"<@{ret[0]}> `Lvl: {ret[4]}` ,   Counts: `{ret[2]}` ,   Misscounts: `{ret[3]}` ,   XP: `{ret[5]} / {calc_exp(int(ret[4]) + 1)}`"
+
+        embed = discord.Embed(
+            title='Rank for: ' + ret[1],
+            description=description,
+            colour=discord.Colour(0x37b326))
+        await ctx.send(embed=embed)
 
     def check_id(self, userid):
         statement = '''SELECT EXISTS(SELECT 1 FROM Counting WHERE UserID=?)'''
@@ -173,14 +192,18 @@ class Counting(commands.Cog):
         statement = '''UPDATE Counting SET Counts=? WHERE UserID=?'''
         args = (str(count + 1), str(authorid),)
         self.db.execute_statement(statement, args)
-        self.add_xp(curr_exp, authorid, xp_bonus)
+        return self.add_xp(curr_exp, authorid, xp_bonus)
 
     def add_xp(self, curr_exp, authorid, xp_bonus):
         newexp = curr_exp + 10*xp_bonus
+        oldlevel = calc_lvl(curr_exp)
         newlevel = calc_lvl(newexp)
         statement = '''UPDATE Counting Set Experience=?, Level=? WHERE UserID=?'''
         args = (str(newexp), str(newlevel), str(authorid),)
         self.db.execute_statement(statement, args)
+        if newlevel != oldlevel:
+            return newlevel, True
+        return oldlevel, False
 
     def wrong_count(self, authorid):
         if not self.check_id(authorid):
