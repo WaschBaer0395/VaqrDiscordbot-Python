@@ -5,6 +5,7 @@ import configparser
 from discord.ext import commands
 from distutils.util import strtobool
 from ext.SQLlite import SqlLite
+from ext.config import *
 
 from ext.confirmer import ConfirmerSession
 
@@ -26,6 +27,12 @@ class Counting(commands.Cog):
         self.bot = bot
         self.db = SqlLite('Counting')
         self.init_db()
+        self.settings = {
+                'channelSet': 'False',
+                'Name': 'None',
+                'ID': 'None',
+                'currentCount': '0',
+            }
 
     def init_db(self):
         statement = ' \
@@ -52,7 +59,7 @@ class Counting(commands.Cog):
             return
         else:
             embedctx = None
-            config = check_config()
+            config, self.settings = check_config('COUNTING', self.settings)
             try:
                 if bool(strtobool(config.get('COUNTING', 'channelSet'))):
 
@@ -80,7 +87,7 @@ class Counting(commands.Cog):
 
     @commands.command(aliases=['c'])
     async def count(self, ctx, args='help'):
-        config = check_config()
+        config, self.settings = check_config('COUNTING', self.settings)
         if int(config.get('COUNTING', 'id')) != ctx.channel.id:
             if args == 'help' or None:
                 embed = discord.Embed(title="Counting usage",
@@ -103,7 +110,7 @@ class Counting(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message):
         try:
-            config = check_config()
+            config, self.settings = check_config('COUNTING', self.settings)
             if int(config.get('COUNTING', 'id')) != int(message.channel.id):
                 return
             else:
@@ -212,33 +219,6 @@ class Counting(commands.Cog):
             description=description,
             colour=discord.Colour(0x37b326))
         await ctx.send(embed=embed)
-
-
-def check_config():
-    config = configparser.ConfigParser()
-    config.read('settings.ini')
-
-    # checking for existing config
-    if config.has_section('COUNTING'):
-        channelName = config.get('COUNTING', 'Name')
-        channelID = config.get('COUNTING', 'ID')
-        currentCount = config.get('COUNTING', 'currentCount')
-        channelSet = config.get('COUNTING', 'channelSet')
-    else:
-        # writing default config, incase none has been found
-        config['COUNTING'] = \
-            {
-                'channelSet': 'False',
-                'Name': 'None',
-                'ID': 'None',
-                'currentCount': '0',
-            }
-        try:
-            with open('settings.ini', 'a+') as configfile:
-                config.write(configfile)
-        except Exception as e:
-            print('```error writing config: ' + str(e) + ' ```')
-    return config
 
 
 def configset(config, channel):
