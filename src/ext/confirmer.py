@@ -74,7 +74,7 @@ class ConfirmerSession:
 
                 action = self.reactions[reaction.emoji]  # gets the function from the reaction map OrderedDict
                 response = await action()  # awaits here with () because __init__ can't be async
-                return response
+                return response, self.message
 
     # all functions with await must be async
     async def accept(self):
@@ -86,7 +86,7 @@ class ConfirmerSession:
             pass
 
         self.running = False
-        return 1
+        return True
 
     async def deny(self):
         '''Deny the prompt'''
@@ -97,4 +97,4 @@ class ConfirmerSession:
             pass
 
         self.running = False
-        return 0
+        return False
