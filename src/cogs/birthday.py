@@ -29,27 +29,10 @@ class Birthday(commands.Cog):
     async def on_ready(self):
         print('BirthdayBot Ready')
         self.del_obs_members()
-        self.find_birthday(datetime.now())
+        found, birthday_kids = self.find_birthday(datetime.now())
+        if found:
+            await self.greet_birthday_kids(birthday_kids)
         # self.check_time()
-
-    def check_time(self):
-        # This function runs periodically every Hour
-        threading.Timer(600, self.check_time).start()
-        utc = timezone('UTC')
-        utc_now = utc.localize(datetime.utcnow())
-        user_time = utc_now
-        if utc_now != datetime.now():
-            user_tz = timezone(self.config.get('BIRTHDAY', 'Announcetimezone'))
-            user_time = user_time.astimezone(user_tz).strftime("%H:%M")
-
-        in_time = datetime.strptime(self.config.get('BIRTHDAY', 'Announcetime'), "%I:%M%p")
-        out_time = datetime.strftime(in_time, "%H:%M")
-
-        print('current check Time: {} vs. {}'.format(user_time, out_time))
-
-        if user_time == out_time:
-            print('Happy birthday')
-            #await asyncio.sleep(300)
 
     def init_config(self):
         settings = {
@@ -58,10 +41,10 @@ class Birthday(commands.Cog):
                 'Init-ChannelID': 'None',
                 'Announcetime': '8:00am',
                 'Announcetimezone': 'US/Pacific',
-                'Accounce-ChannelID': 'None',
+                'Announce-ChannelID': 'None',
                 'Announce-ChannelName': 'None',
                 'SingularMessage': 'Has their Birthday today, wish them a happy birthday!',
-                'PlurarlMessage': 'Have their Birthday today, wish them a happy birthday!'
+                'PluralMessage': 'Have their Birthday today, wish them a happy birthday!'
         }
         self.conf, self.settings = check_config('BIRTHDAY', settings)
 
@@ -140,6 +123,43 @@ class Birthday(commands.Cog):
                                               f"<#{channel[1].id}> -`{channel[1].id}`", colour=discord.Colour(0x37b326))
             await embedctx.edit(embed=embed)
 
+    def check_time(self):
+        # This function runs periodically every Hour
+        threading.Timer(600, self.check_time).start()
+        utc = timezone('UTC')
+        utc_now = utc.localize(datetime.utcnow())
+        user_time = utc_now
+        if utc_now != datetime.now():
+            user_tz = timezone(self.config.get('BIRTHDAY', 'Announcetimezone'))
+            user_time = user_time.astimezone(user_tz).strftime("%H:%M")
+
+        in_time = datetime.strptime(self.config.get('BIRTHDAY', 'Announcetime'), "%I:%M%p")
+        out_time = datetime.strftime(in_time, "%H:%M")
+
+        print('current check Time: {} vs. {}'.format(user_time, out_time))
+
+        if user_time == out_time:
+            print('Happy birthday')
+            #await asyncio.sleep(300)
+
+    async def greet_birthday_kids(self, birthday_kids):
+        names = ''
+        count = 1
+        number_kids = len(birthday_kids)
+        for b in birthday_kids:
+            names = names + '<@{}>'.format(b.id)
+            if count != number_kids-1:
+                names = names + ' , '
+            if count == number_kids-1:
+                names = names + ' and '
+            count = count + 1
+
+        channel = discord.utils.get(self.bot.guilds[0].channels, id=int(self.conf.get('BIRTHDAY', 'Announce-ChannelID')))
+        if len(birthday_kids) > 1:
+            await channel.send(names + self.conf.get('BIRTHDAY', 'PluralMessage') + ' @here')
+        else:
+            await channel.send(names + self.conf.get('BIRTHDAY', 'SingularMessage') + ' @here')
+
     def del_obs_members(self):
         statement = '''SELECT UserID FROM Birthday'''
         ret, data = self.db.execute_statement(statement)
@@ -151,7 +171,7 @@ class Birthday(commands.Cog):
             member_ids.append(m.id)
 
         non_match = non_match_elements(bday_ids, member_ids)
-        if len(non_match) is not 0:
+        if len(non_match) != 0:
             for id in non_match:
                 self.del_birthday(id)
 
@@ -166,9 +186,10 @@ class Birthday(commands.Cog):
         for m in self.bot.guilds[0].members:
             if m.id in temp:
                 birthday_kids.append(m)
-
-        for b in birthday_kids:
-            print(b.display_name)
+        if len(birthday_kids) == 0:
+            return False, None
+        else:
+            return True, birthday_kids
 
     def update_birthday(self, user, md, m, d):
         statement = ''' UPDATE Birthday SET MonthDayDisp=?,Month=?,Day=? WHERE UserID=?'''

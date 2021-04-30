@@ -94,7 +94,7 @@ class Counting(commands.Cog):
                                                   f"**Example:**  `v!c leaderboard`",
                                       colour=discord.Colour(0x37b326))
                 await ctx.send(embed=embed)
-            if args == 'leaderboard' or 'top10' or 'list':
+            if args == 'leaderboard' or args == 'top10' or args == 'list':
                 await self.get_top10(ctx)
 
     @commands.Cog.listener()
