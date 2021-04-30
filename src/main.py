@@ -40,7 +40,8 @@ scheduler = BackgroundScheduler()
 load_dotenv()
 TOKEN = 'None'
 PREFIX = '!'
-bot = commands.Bot(PREFIX)
+intents = discord.Intents.all()
+bot = commands.Bot(PREFIX, intents=intents)
 
 path = 'cogs.'
 extensions = [x.replace('.py', '') for x in os.listdir(os.getcwd()+'/src/cogs/') if x.endswith('.py')]
@@ -126,6 +127,7 @@ async def on_member_join(member):
 
 @bot.event
 async def on_ready(): # When the bot starts
+    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="over Vaqrnation"))
     print(f"Bot online and logged in as {bot.user}")
 
 
