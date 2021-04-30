@@ -62,24 +62,14 @@ class Counting(commands.Cog):
             config, self.settings = check_config('COUNTING', self.settings)
             try:
                 if bool(strtobool(config.get('COUNTING', 'channelSet'))):
-
-                    embed = discord.Embed(title="Channel Confirm", colour=discord.Colour(0x269a78)
-                                          , description="Are you sure you want to restart counting in a new channel?")
-                    c_session = ConfirmerSession(ctx, page=embed)
-                    response, embedctx = await c_session.run()
-                    if response is True:
-                        config = configset(config, channel[0])
-                    else:
-                        embed = discord.Embed(description=f"The counting channel was not set",
-                                              colour=discord.Colour(0xbf212f))
-                        await embedctx.edit(embed=embed)
-                        return
+                    embedctx, config = await channel_set(ctx, config, channel, reassign=True)
                 else:
-                    config = configset(config, channel[0])
+                    embedctx, config = await channel_set(ctx, config, channel, reassign=False)
                 save_config(config)
             except Exception as e:
-                await ctx.send('```' + str(e) + '```')
-                return
+                #await ctx.send('```' + str(e) + '```')
+                raise e
+                #return
 
             embed = discord.Embed(description=f"The counting channel was set to <#{channel[0].id}>"
                                               f" with an id of {channel[0].id}", colour=discord.Colour(0x37b326))
@@ -111,7 +101,7 @@ class Counting(commands.Cog):
     async def on_message(self, message):
         try:
             config, self.settings = check_config('COUNTING', self.settings)
-            if int(config.get('COUNTING', 'id')) != int(message.channel.id):
+            if config.get('COUNTING', 'id') != str(message.channel.id):
                 return
             else:
                 if message.content.isnumeric():
@@ -221,18 +211,33 @@ class Counting(commands.Cog):
         await ctx.send(embed=embed)
 
 
+async def channel_set(ctx, config, channel, reassign):
+    if reassign:
+        embed = discord.Embed(title="Channel Confirm", colour=discord.Colour(0x269a78)
+                              , description="Are you sure you want to restart counting in a new channel?")
+        c_session = ConfirmerSession(ctx, page=embed)
+        response, embedctx = await c_session.run()
+    else:
+        embed = discord.Embed(title="Setting New Channel", colour=discord.Colour(0x269a78)
+                              , description="Setting channel")
+        embedctx = await ctx.send(embed=embed)
+        response = True
+    if response is True:
+        config = configset(config, channel[0])
+    else:
+        embed = discord.Embed(description=f"The counting channel was not set",
+                              colour=discord.Colour(0xbf212f))
+        await embedctx.edit(embed=embed)
+        return embedctx, config
+    return embedctx, config
+
+
 def configset(config, channel):
     config.set('COUNTING', 'channelSet', str(True))
     config.set('COUNTING', 'Name', str(channel.name))
     config.set('COUNTING', 'ID', str(channel.id))
     config.set('COUNTING', 'currentCount', str(0))
     return config
-
-
-def save_config(config):
-    with open('settings.ini', 'w+') as configfile:
-        config.write(configfile)
-        return True
 
 
 def calc_lvl(curr_exp):

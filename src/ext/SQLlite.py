@@ -49,7 +49,7 @@ class SqlLite():
             self.cursor.execute(statement, parameters)
             self.conn.commit()
             ret = self.cursor.fetchall()
-            return True, ret, None
+            return True, ret
         except Error as err:
             if 'UNIQUE' not in str(err):
                 return False, err
