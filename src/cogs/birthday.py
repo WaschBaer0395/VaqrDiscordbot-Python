@@ -43,7 +43,7 @@ class Birthday(commands.Cog):
         self.conf, self.settings = check_config('BIRTHDAY', settings)
 
     @commands.command()
-    async def bset(self, ctx, *, args=None):
+    async def bset(self, ctx, arg, args=None):
         '''<birthday> Setup your Birthday by entering the date'''
         day, month, err = get_date_month(args)
         config, self.settings = check_config('BIRTHDAY', self.settings)
@@ -64,11 +64,46 @@ class Birthday(commands.Cog):
                                                colour=discord.Colour(0x00FF97)))
 
     @commands.command()
-    async def btime(self, ctx, *args):
-        print('Time')
+    async def btime(self, ctx, *, arg=''):
+        '''<Time> Setup the Announce Time'''
+        in_time = ''
+        try:
+            in_time = datetime.strptime(arg, "%I:%M %p")
+        except ValueError:
+            try:
+                in_time = datetime.strptime(arg, "%I:%M%p")
+            except ValueError:
+                try:
+                    in_time = datetime.strptime(arg, "%I %p")
+                except ValueError:
+                    try:
+                        in_time = datetime.strptime(arg, "%I%p")
+                    except ValueError:
+                        await ctx.send(embed=discord.Embed(
+                            description=f"Error Setting time\n"
+                                        f"Enter a correct time with either of those formats:\n"
+                                        f"example `8am`, `8 am`, `08am`, `08 am`, "
+                                        f"`8:00am`, `8:00 am`, `08:00 am`, `08:00am`",
+                            colour=discord.Colour(0x37b326)))
+                        return
+        if int(in_time.minute%10) == 0:
+            conv_time = in_time.strftime('%I:%M%p')
+            self.conf.set('BIRTHDAY', 'AnnounceTime', conv_time)
+            save_config(self.conf)
+            await ctx.send(embed=discord.Embed(
+                description=f"Announcetime has been set to `{conv_time}`",
+                colour=discord.Colour(0x00FF97)))
+        else:
+            await ctx.send(embed=discord.Embed(
+                description=f"Time can only be entered with Minutes being a multiple of 10 !`\n"
+                            f"e.g: 10 20 30 40 50 0",
+                colour=discord.Colour(0x37b326)))
+            return
 
     @commands.command()
     async def brole(self, ctx, role: commands.Greedy[discord.Role]):
+        '''<@Role> Setup your Birthdayrole'''
+
         if len(role) == 0 or len(role) > 1 or type(role[0]) != discord.Role:
             await ctx.send(embed=discord.Embed(description=f"Syntax is `bset <@role>`\n"
                                                            f"the role entered is either not a role\n"
@@ -117,15 +152,36 @@ class Birthday(commands.Cog):
                                               f"<#{channel[0].id}> -`{channel[0].id}`"
                                               f"\n"
                                               f"The Birthday-Announce Channel was set to: \n"
-                                              f"<#{channel[1].id}> -`{channel[1].id}`", colour=discord.Colour(0x00FF97))
+                                              f"<#{channel[1].id}> -`{channel[1].id}`\n"
+                                              f"Dont forget to also set:\n"
+                                              f"the announce time with `btime`\n"
+                                              f"the role with `brole`\n"
+                                              f"and maybe change the announce message with `bmsgp` for plural\n"
+                                              f"and `bmsg` for singular", colour=discord.Colour(0x00FF97))
             await embedctx.edit(embed=embed)
+
+    @commands.command()
+    async def bmsgp(self, ctx, *, arg=''):
+        self.conf.set('BIRTHDAY', 'PluralMessage', arg)
+        save_config(self.conf)
+        await ctx.send(embed=discord.Embed(description=f"Message has been set to: \n"
+                                                       f"<user>, <user> and <user>, {arg} <here>",
+                                           colour=discord.Colour(0x00FF97)))
+
+    @commands.command()
+    async def bmsg(self, ctx, *, arg=''):
+        self.conf.set('BIRTHDAY', 'SingularMessage', arg)
+        save_config(self.conf)
+        await ctx.send(embed=discord.Embed(description=f"Message has been set to: \n"
+                                                       f"<user>, {arg} <here>",
+                                           colour=discord.Colour(0x00FF97)))
 
     def cog_unload(self):
         self.check_time.cancel()
 
     @tasks.loop(minutes=1)
     async def check_time(self):
-        # This function runs periodically every Hour
+        # This function runs periodically every 10minutes
         utc = timezone('UTC')
         utc_now = utc.localize(datetime.utcnow())
         user_time = utc_now
