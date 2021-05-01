@@ -52,7 +52,7 @@ class Birthday(commands.Cog):
                                                            f'The following formats are accepted, as examples: \n'
                                                            f'`15-jan`, `jan-15`, `15 jan`,\n'
                                                            f'`jan 15`, `15 January`, `January 15`',
-                                               colour=discord.Colour(0xbf212f)))
+                                               colour=discord.Colour(0x37b326)))
             return
         else:
             monthday = find_month(month)[0][:3] + '-' + day
@@ -61,7 +61,24 @@ class Birthday(commands.Cog):
                                                            f"Birthdays will always be announced at"
                                                            f" {self.conf.get('BIRTHDAY', 'Announcetime')}"
                                                            f" {self.conf.get('BIRTHDAY', 'Announcetimezone')}",
+                                               colour=discord.Colour(0x00FF97)))
+
+    @commands.command()
+    async def btime(self, ctx, *args):
+        print('Time')
+
+    @commands.command()
+    async def brole(self, ctx, role: commands.Greedy[discord.Role]):
+        if len(role) == 0 or len(role) > 1 or type(role[0]) != discord.Role:
+            await ctx.send(embed=discord.Embed(description=f"Syntax is `bset <@role>`\n"
+                                                           f"the role entered is either not a role\n"
+                                                           f" or you entered more than 2 Roles",
                                                colour=discord.Colour(0x37b326)))
+        else:
+            self.conf.set('BIRTHDAY', 'BirthdayRole', str(role[0].id))
+            save_config(self.conf)
+            await ctx.send(embed=discord.Embed(description=f"Role has been set to <@&{str(role[0].id)}>\n",
+                                               colour=discord.Colour(0x00FF97)))
 
     @commands.command()
     @commands.has_permissions(manage_guild=True)
@@ -69,7 +86,7 @@ class Birthday(commands.Cog):
         '''<user> Force Delete a birthday'''
         del_birthday(member[0].id)
         await ctx.send(embed=discord.Embed(description=f"Birthday for : <@{member[0].id}>, was deleted",
-                                           colour=discord.Colour(0x37b326)))
+                                           colour=discord.Colour(0x00FF97)))
         return
 
     @commands.command()
@@ -77,7 +94,7 @@ class Birthday(commands.Cog):
         '''Delete your birthday from the DB'''
         del_birthday(ctx.author.id)
         await ctx.send(embed=discord.Embed(description=f"Your Birthday was deleted",
-                                           colour=discord.Colour(0x37b326)))
+                                           colour=discord.Colour(0x00FF97)))
         return
 
     @commands.command(no_pm=True)
@@ -87,7 +104,7 @@ class Birthday(commands.Cog):
         if len(channel) != 2:
             await ctx.send(embed=discord.Embed(description=f"Syntax is `bset <birthdaychannel> <Accouncementchannel>`\n"
                                                            f"you have either selected only 1, or more than 2 channels",
-                                               colour=discord.Colour(0xbf212f)))
+                                               colour=discord.Colour(0x37b326)))
             return
         else:
             try:
@@ -100,17 +117,11 @@ class Birthday(commands.Cog):
                                               f"<#{channel[0].id}> -`{channel[0].id}`"
                                               f"\n"
                                               f"The Birthday-Announce Channel was set to: \n"
-                                              f"<#{channel[1].id}> -`{channel[1].id}`", colour=discord.Colour(0x37b326))
+                                              f"<#{channel[1].id}> -`{channel[1].id}`", colour=discord.Colour(0x00FF97))
             await embedctx.edit(embed=embed)
 
     def cog_unload(self):
         self.check_time.cancel()
-
-    @tasks.loop(seconds=3.0)
-    async def printer(self):
-        print(self.index)
-        self.index += 1
-        await asyncio.sleep(2)
 
     @tasks.loop(minutes=1)
     async def check_time(self):
@@ -296,5 +307,5 @@ def init_db():
     SqlLite('Birthdays').create_table(statement)
 
 
-def setup(_bot):
-    bot.add_cog(Birthday(_bot))
+def setup(bot):
+    bot.add_cog(Birthday(bot))

@@ -4,7 +4,7 @@ import traceback
 from sqlite3 import Error
 
 
-class SqlLite():
+class SqlLite:
 
     def __init__(self, filename):
         self.conn = None
@@ -20,6 +20,7 @@ class SqlLite():
         path = os.getcwd() + '/src/data/' + filename + '.sqlite'
         try:
             self.conn = sqlite3.connect(path)
+            self.cursor = self.conn.cursor()
         except Error as e:
             print(e)
 
@@ -29,7 +30,6 @@ class SqlLite():
         :return:
         """
         try:
-            self.cursor = self.conn.cursor()
             self.cursor.execute(create_table_sql)
         except Error as e:
             print(e)
