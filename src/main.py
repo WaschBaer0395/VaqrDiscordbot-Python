@@ -36,11 +36,14 @@ from discord.ext import commands
 from dotenv import load_dotenv
 from apscheduler.schedulers.background import BackgroundScheduler
 
+intents = discord.Intents.default()
+intents.members = True
+
 scheduler = BackgroundScheduler()
 load_dotenv()
 TOKEN = 'None'
 PREFIX = '!'
-bot = commands.Bot(PREFIX)
+bot = commands.Bot(PREFIX, intents=intents)
 
 path = 'cogs.'
 extensions = [x.replace('.py', '') for x in os.listdir(os.getcwd()+'/src/cogs/') if x.endswith('.py')]
