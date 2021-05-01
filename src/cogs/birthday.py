@@ -1,11 +1,9 @@
 import asyncio
 import re
-import threading
 import discord
 
-from discord.ext import commands, tasks
-from discord.utils import get
 
+from discord.ext import commands, tasks
 from ext.SQLlite import SqlLite
 from ext.config import *
 from ext.confirmer import ConfirmerSession
@@ -17,22 +15,17 @@ bot = commands.Bot('')
 
 class Birthday(commands.Cog):
 
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self, _bot):
+        self.bot = _bot
         self.conf = None
         self.settings = None
-        self.db = SqlLite('Birthdays')
-        self.init_db()
+        self.index = 0
+        init_db()
         self.init_config()
 
     @commands.Cog.listener()
     async def on_ready(self):
-        print('BirthdayBot Ready')
-        self.del_obs_members()
-        found, birthday_kids = self.find_birthday(datetime.now())
-        if found:
-            await self.greet_birthday_kids(birthday_kids)
-        # self.check_time()
+        await self.check_time.start()
 
     def init_config(self):
         settings = {
@@ -43,24 +36,11 @@ class Birthday(commands.Cog):
                 'Announcetimezone': 'US/Pacific',
                 'Announce-ChannelID': 'None',
                 'Announce-ChannelName': 'None',
+                'BirthdayRole': 'None',
                 'SingularMessage': 'Has their Birthday today, wish them a happy birthday!',
                 'PluralMessage': 'Have their Birthday today, wish them a happy birthday!'
         }
         self.conf, self.settings = check_config('BIRTHDAY', settings)
-
-    def init_db(self):
-        statement = ' \
-                           CREATE TABLE IF NOT EXISTS Birthday( \
-                               UserID integer PRIMARY KEY, \
-                               UserName text NOT NULL, \
-                               Discriminator text NOT NULL, \
-                               Nickname text, \
-                               MonthDayDisp text, \
-                               Month integer, \
-                               Day integer, \
-                               Timezone text ' \
-                    ');'
-        self.db.create_table(statement)
 
     @commands.command()
     async def bset(self, ctx, *, args=None):
@@ -76,18 +56,18 @@ class Birthday(commands.Cog):
             return
         else:
             monthday = find_month(month)[0][:3] + '-' + day
-            self.add_birthday(ctx.author, monthday, find_month(month)[1], day)
+            add_birthday(ctx.author, monthday, find_month(month)[1], day)
             await ctx.send(embed=discord.Embed(description=f"Your Birthday was set for: `{day}-{find_month(month)[0]}`\n"
                                                            f"Birthdays will always be announced at"
-                                                           f" {self.config.get('BIRTHDAY', 'Announcetime')}"
-                                                           f" {self.config.get('BIRTHDAY', 'Announcetimezone')}",
+                                                           f" {self.conf.get('BIRTHDAY', 'Announcetime')}"
+                                                           f" {self.conf.get('BIRTHDAY', 'Announcetimezone')}",
                                                colour=discord.Colour(0x37b326)))
 
     @commands.command()
     @commands.has_permissions(manage_guild=True)
     async def bforcedel(self, ctx, member: commands.Greedy[discord.Member]):
         '''<user> Force Delete a birthday'''
-        self.del_birthday(member[0].id)
+        del_birthday(member[0].id)
         await ctx.send(embed=discord.Embed(description=f"Birthday for : <@{member[0].id}>, was deleted",
                                            colour=discord.Colour(0x37b326)))
         return
@@ -95,7 +75,7 @@ class Birthday(commands.Cog):
     @commands.command()
     async def bdel(self, ctx):
         '''Delete your birthday from the DB'''
-        self.del_birthday(ctx.author.id)
+        del_birthday(ctx.author.id)
         await ctx.send(embed=discord.Embed(description=f"Your Birthday was deleted",
                                            colour=discord.Colour(0x37b326)))
         return
@@ -112,7 +92,7 @@ class Birthday(commands.Cog):
         else:
             try:
                 embedctx = await self.channel_set(ctx, channel[0], channel[1])
-                save_config(self.config)
+                save_config(self.conf)
             except Exception as e:
                 await ctx.send('```' + str(e) + '```')
                 return
@@ -123,24 +103,36 @@ class Birthday(commands.Cog):
                                               f"<#{channel[1].id}> -`{channel[1].id}`", colour=discord.Colour(0x37b326))
             await embedctx.edit(embed=embed)
 
-    def check_time(self):
+    def cog_unload(self):
+        self.check_time.cancel()
+
+    @tasks.loop(seconds=3.0)
+    async def printer(self):
+        print(self.index)
+        self.index += 1
+        await asyncio.sleep(2)
+
+    @tasks.loop(minutes=1)
+    async def check_time(self):
         # This function runs periodically every Hour
-        threading.Timer(600, self.check_time).start()
         utc = timezone('UTC')
         utc_now = utc.localize(datetime.utcnow())
         user_time = utc_now
         if utc_now != datetime.now():
-            user_tz = timezone(self.config.get('BIRTHDAY', 'Announcetimezone'))
+            user_tz = timezone(self.conf.get('BIRTHDAY', 'Announcetimezone'))
             user_time = user_time.astimezone(user_tz).strftime("%H:%M")
 
-        in_time = datetime.strptime(self.config.get('BIRTHDAY', 'Announcetime'), "%I:%M%p")
+        in_time = datetime.strptime(self.conf.get('BIRTHDAY', 'Announcetime'), "%I:%M%p")
         out_time = datetime.strftime(in_time, "%H:%M")
 
         print('current check Time: {} vs. {}'.format(user_time, out_time))
-
-        if user_time == out_time:
-            print('Happy birthday')
-            #await asyncio.sleep(300)
+        if user_time == out_time or user_time == '09:52':
+            self.del_obs_members()
+            found, birthday_kids = self.find_birthday(datetime.now())
+            if found:
+                await self.greet_birthday_kids(birthday_kids)
+                print('Send at: ' + utc.localize(datetime.utcnow()).astimezone(timezone(
+                    self.conf.get('BIRTHDAY', 'Announcetimezone'))).strftime("%H:%M:%S"))
 
     async def greet_birthday_kids(self, birthday_kids):
         names = ''
@@ -154,7 +146,8 @@ class Birthday(commands.Cog):
                 names = names + ' and '
             count = count + 1
 
-        channel = discord.utils.get(self.bot.guilds[0].channels, id=int(self.conf.get('BIRTHDAY', 'Announce-ChannelID')))
+        channel = discord.utils.get(self.bot.guilds[0].channels, id=int(
+                                    self.conf.get('BIRTHDAY', 'Announce-ChannelID')))
         if len(birthday_kids) > 1:
             await channel.send(names + self.conf.get('BIRTHDAY', 'PluralMessage') + ' @here')
         else:
@@ -162,7 +155,7 @@ class Birthday(commands.Cog):
 
     def del_obs_members(self):
         statement = '''SELECT UserID FROM Birthday'''
-        ret, data = self.db.execute_statement(statement)
+        ret, data = SqlLite('Birthdays').execute_statement(statement)
         member_ids = []
         bday_ids = []
         for d in data:
@@ -172,13 +165,13 @@ class Birthday(commands.Cog):
 
         non_match = non_match_elements(bday_ids, member_ids)
         if len(non_match) != 0:
-            for id in non_match:
-                self.del_birthday(id)
+            for d in non_match:
+                del_birthday(d)
 
     def find_birthday(self, curr_date):
         statement = '''SELECT UserID FROM Birthday WHERE Day=? AND month=?'''
         args = (curr_date.day, curr_date.month)
-        ret, data = self.db.execute_statement(statement, args)
+        ret, data = SqlLite('Birthdays').execute_statement(statement, args)
         temp = []
         birthday_kids = []
         for d in data:
@@ -191,46 +184,49 @@ class Birthday(commands.Cog):
         else:
             return True, birthday_kids
 
-    def update_birthday(self, user, md, m, d):
-        statement = ''' UPDATE Birthday SET MonthDayDisp=?,Month=?,Day=? WHERE UserID=?'''
-        args = (md, m, d, user.id,)
-        ret, err = self.db.execute_statement(statement, args)
-        print(err)
-        return ret
-
-    def add_birthday(self, user, md, m, d):
-        statement = ''' INSERT INTO Birthday (UserID,UserName,Discriminator,Nickname,MonthDayDisp,Month,Day,Timezone)  
-                        VALUES(?,?,?,?,?,?,?,'')'''
-
-        args = (str(user.id), user.name, user.discriminator, user.nick, md, str(m), str(d),)
-        ret, err = self.db.execute_statement(statement, args)
-        if 'UNIQUE' in str(err):
-            ret = self.update_birthday(user, md, m, d)
-        return ret
-
-    def del_birthday(self, userid):
-        statement = ''' DELETE FROM Birthday WHERE UserID=?'''
-        args = (str(userid),)
-        ret, data = self.db.execute_statement(statement, args)
-        return ret
-
     async def channel_set(self, ctx, channel, a_channel):
-        embed = discord.Embed(title="Channel Confirm", colour=discord.Colour(0x269a78)
-                              , description="Are you sure you want to Set the BirthdayChannel ?")
+        embed = discord.Embed(title="Channel Confirm", colour=discord.Colour(0x269a78),
+                              description="Are you sure you want to Set the BirthdayChannel ?")
         b_session = ConfirmerSession(ctx, page=embed)
         response, embedctx = await b_session.run()
         if response is True:
-            self.config.set('BIRTHDAY', 'Init-ChannelName', str(channel.name))
-            self.config.set('BIRTHDAY', 'Init-ChannelID', str(channel.id))
-            self.config.set('BIRTHDAY', 'Announce-ChannelID', str(a_channel.id))
-            self.config.set('BIRTHDAY', 'Announce-ChannelName', str(a_channel.name))
-            self.config.set('BIRTHDAY', 'channelSet', 'True')
+            self.conf.set('BIRTHDAY', 'Init-ChannelName', str(channel.name))
+            self.conf.set('BIRTHDAY', 'Init-ChannelID', str(channel.id))
+            self.conf.set('BIRTHDAY', 'Announce-ChannelID', str(a_channel.id))
+            self.conf.set('BIRTHDAY', 'Announce-ChannelName', str(a_channel.name))
+            self.conf.set('BIRTHDAY', 'channelSet', 'True')
         else:
             embed = discord.Embed(description=f"The BirthdayChannel was not set",
                                   colour=discord.Colour(0xbf212f))
             await embedctx.edit(embed=embed)
             return embedctx
         return embedctx
+
+
+def add_birthday(user, md, m, d):
+    statement = ''' INSERT INTO Birthday (UserID,UserName,Discriminator,Nickname,MonthDayDisp,Month,Day,Timezone)  
+                    VALUES(?,?,?,?,?,?,?,'')'''
+
+    args = (str(user.id), user.name, user.discriminator, user.nick, md, str(m), str(d),)
+    ret, err = SqlLite('Birthdays').execute_statement(statement, args)
+    if 'UNIQUE' in str(err):
+        ret = update_birthday(user, md, m, d)
+    return ret
+
+
+def del_birthday(userid):
+    statement = ''' DELETE FROM Birthday WHERE UserID=?'''
+    args = (str(userid),)
+    ret, data = SqlLite('Birthdays').execute_statement(statement, args)
+    return ret
+
+
+def update_birthday(user, md, m, d):
+    statement = ''' UPDATE Birthday SET MonthDayDisp=?,Month=?,Day=? WHERE UserID=?'''
+    args = (md, m, d, user.id,)
+    ret, err = SqlLite('Birthdays').execute_statement(statement, args)
+    print(err)
+    return ret
 
 
 def configset(config, name, settings):
@@ -261,7 +257,6 @@ def get_date_month(args):
 def find_month(month):
     months_in_year = ['January', 'February', 'March', 'April', 'May', 'June',
                       'July', 'August', 'September', 'October', 'November', 'December']
-    index = 0
     for m in months_in_year:
         if re.search(month, m, re.IGNORECASE):
             index = months_in_year.index(m) + 1
@@ -276,5 +271,30 @@ def non_match_elements(list_a, list_b):
     return non_match
 
 
-def setup(bot):
-    bot.add_cog(Birthday(bot))
+def get_or_create_eventloop():
+    try:
+        return asyncio.get_event_loop()
+    except RuntimeError as ex:
+        if "There is no current event loop in thread" in str(ex):
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            return asyncio.get_event_loop()
+
+
+def init_db():
+    statement = ' \
+                       CREATE TABLE IF NOT EXISTS Birthday( \
+                           UserID integer PRIMARY KEY, \
+                           UserName text NOT NULL, \
+                           Discriminator text NOT NULL, \
+                           Nickname text, \
+                           MonthDayDisp text, \
+                           Month integer, \
+                           Day integer, \
+                           Timezone text ' \
+                ');'
+    SqlLite('Birthdays').create_table(statement)
+
+
+def setup(_bot):
+    bot.add_cog(Birthday(_bot))
