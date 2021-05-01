@@ -129,6 +129,7 @@ async def on_member_join(member):
 
 @bot.event
 async def on_ready(): # When the bot starts
+    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="over Vaqrnation"))
     print(f"Bot online and logged in as {bot.user}")
 
 

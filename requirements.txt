@@ -6,3 +6,5 @@ python-dotenv
 apscheduler
 urbandictionary
 wikipedia
+python-dateutil
+nest-asyncio
