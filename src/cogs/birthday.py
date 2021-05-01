@@ -136,14 +136,16 @@ class Birthday(commands.Cog):
         in_time = datetime.strptime(self.conf.get('BIRTHDAY', 'Announcetime'), "%I:%M%p")
         out_time = datetime.strftime(in_time, "%H:%M")
 
-        print('current check Time: {} vs. {}'.format(user_time, out_time))
-        if user_time == out_time or user_time == '09:52':
+        print('Check Time - Current: {} vs. User set: {}'.format(user_time, out_time))
+        if user_time == out_time:
+            await self.remove_birthday_flag()
             self.del_obs_members()
             found, birthday_kids = self.find_birthday(datetime.now())
             if found:
+                await self.set_birthday_role(birthday_kids)
                 await self.greet_birthday_kids(birthday_kids)
-                print('Send at: ' + utc.localize(datetime.utcnow()).astimezone(timezone(
-                    self.conf.get('BIRTHDAY', 'Announcetimezone'))).strftime("%H:%M:%S"))
+                print('Birthdays checked at: ' + utc.localize(datetime.utcnow()).astimezone(timezone(
+                    self.conf.get('BIRTHDAY', 'Announcetimezone'))).strftime("%H:%M:%S.%fZ"))
 
     async def greet_birthday_kids(self, birthday_kids):
         names = ''
@@ -183,6 +185,7 @@ class Birthday(commands.Cog):
         statement = '''SELECT UserID FROM Birthday WHERE Day=? AND month=?'''
         args = (curr_date.day, curr_date.month)
         ret, data = SqlLite('Birthdays').execute_statement(statement, args)
+
         temp = []
         birthday_kids = []
         for d in data:
@@ -213,16 +216,44 @@ class Birthday(commands.Cog):
             return embedctx
         return embedctx
 
+    async def remove_birthday_role(self, members_ids):
+        role = self.bot.guilds[0].get_role(int(self.conf.get('BIRTHDAY', 'birthdayrole')))
+        for m_id in members_ids[0]:
+            member = self.bot.guilds[0].get_member(m_id)
+            await member.remove_roles(role)
+
+    async def set_birthday_role(self, birthday_kids):
+        role = self.bot.guilds[0].get_role(int(self.conf.get('BIRTHDAY', 'birthdayrole')))
+        for member in birthday_kids:
+            set_birthday_flag(member.id)
+            await member.add_roles(role)
+
+    async def remove_birthday_flag(self):
+        statement = '''SELECT UserID FROM Birthday WHERE Birthday=1'''
+        ret, data = SqlLite('Birthdays').execute_statement(statement)
+
+        await self.remove_birthday_role(data)
+
+        statement = '''UPDATE BIRTHDAY SET birthday=0 WHERE Birthday=1'''
+        ret, err = SqlLite('Birthdays').execute_statement(statement)
+
 
 def add_birthday(user, md, m, d):
-    statement = ''' INSERT INTO Birthday (UserID,UserName,Discriminator,Nickname,MonthDayDisp,Month,Day,Timezone)  
-                    VALUES(?,?,?,?,?,?,?,'')'''
+    statement = ''' INSERT INTO Birthday 
+                    (UserID,UserName,Discriminator,Nickname,MonthDayDisp,Month,Day,Timezone,Birthday)
+                    VALUES(?,?,?,?,?,?,?,'',0)'''
 
     args = (str(user.id), user.name, user.discriminator, user.nick, md, str(m), str(d),)
     ret, err = SqlLite('Birthdays').execute_statement(statement, args)
     if 'UNIQUE' in str(err):
         ret = update_birthday(user, md, m, d)
     return ret
+
+
+def set_birthday_flag(_id):
+    statement = '''UPDATE BIRTHDAY SET Birthday=1 WHERE UserID=?'''
+    args = (_id,)
+    SqlLite('Birthdays').execute_statement(statement, args)
 
 
 def del_birthday(userid):
@@ -236,7 +267,6 @@ def update_birthday(user, md, m, d):
     statement = ''' UPDATE Birthday SET MonthDayDisp=?,Month=?,Day=? WHERE UserID=?'''
     args = (md, m, d, user.id,)
     ret, err = SqlLite('Birthdays').execute_statement(statement, args)
-    print(err)
     return ret
 
 
@@ -293,17 +323,17 @@ def get_or_create_eventloop():
 
 
 def init_db():
-    statement = ' \
-                       CREATE TABLE IF NOT EXISTS Birthday( \
-                           UserID integer PRIMARY KEY, \
-                           UserName text NOT NULL, \
-                           Discriminator text NOT NULL, \
-                           Nickname text, \
-                           MonthDayDisp text, \
-                           Month integer, \
-                           Day integer, \
-                           Timezone text ' \
-                ');'
+    statement = ''' CREATE TABLE IF NOT EXISTS Birthday( \
+                        UserID integer PRIMARY KEY, \
+                        UserName text NOT NULL, \
+                        Discriminator text NOT NULL, \
+                        Nickname text, \
+                        MonthDayDisp text, \
+                        Month integer, \
+                        Day integer, \
+                        Timezone text, \
+                        Birthday integer 
+                        );'''
     SqlLite('Birthdays').create_table(statement)
 
 
