@@ -82,8 +82,7 @@ class ModLog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
-        print("member update")
-        e=discord.Embed(color=discord.Color.blue())
+        e = discord.Embed(color=discord.Color.blue())
         e.set_author(name="Member Updated", icon_url=after.avatar.url)
         e.set_footer(text=f"User ID: {after.id}")
         r_before = [role.id for role in before.roles]

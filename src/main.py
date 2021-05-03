@@ -36,8 +36,7 @@ from discord.ext import commands
 from dotenv import load_dotenv
 from apscheduler.schedulers.background import BackgroundScheduler
 
-intents = discord.Intents.default()
-intents.members = True
+intents = discord.Intents.all()
 
 scheduler = BackgroundScheduler()
 load_dotenv()

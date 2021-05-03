@@ -151,3 +151,4 @@ crashlytics-build.properties
 fabric.properties
 /src/data/Counting.sqlite
 /src/data/Birthdays.sqlite
+/src/data/Birthdays - Kopie.sqlite

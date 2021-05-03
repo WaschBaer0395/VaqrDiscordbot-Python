@@ -43,7 +43,7 @@ class Birthday(commands.Cog):
         self.conf, self.settings = check_config('BIRTHDAY', settings)
 
     @commands.command()
-    async def bset(self, ctx, arg, args=None):
+    async def bset(self, ctx, *, args=None):
         '''<birthday> Setup your Birthday by entering the date'''
         day, month, err = get_date_month(args)
         config, self.settings = check_config('BIRTHDAY', self.settings)
@@ -185,8 +185,10 @@ class Birthday(commands.Cog):
         utc = timezone('UTC')
         utc_now = utc.localize(datetime.utcnow())
         user_time = utc_now
+        user_date = utc_now
         if utc_now != datetime.now():
             user_tz = timezone(self.conf.get('BIRTHDAY', 'Announcetimezone'))
+            user_date = user_time.astimezone(user_tz)
             user_time = user_time.astimezone(user_tz).strftime("%H:%M")
 
         in_time = datetime.strptime(self.conf.get('BIRTHDAY', 'Announcetime'), "%I:%M%p")
@@ -196,12 +198,12 @@ class Birthday(commands.Cog):
         if user_time == out_time:
             await self.remove_birthday_flag()
             self.del_obs_members()
-            found, birthday_kids = self.find_birthday(datetime.now())
+            found, birthday_kids = self.find_birthday(user_date)
+            print('Birthdays checked at: ' + utc.localize(datetime.utcnow()).astimezone(timezone(
+                self.conf.get('BIRTHDAY', 'Announcetimezone'))).strftime("%H:%M:%S.%fZ"))
             if found:
                 await self.set_birthday_role(birthday_kids)
                 await self.greet_birthday_kids(birthday_kids)
-                print('Birthdays checked at: ' + utc.localize(datetime.utcnow()).astimezone(timezone(
-                    self.conf.get('BIRTHDAY', 'Announcetimezone'))).strftime("%H:%M:%S.%fZ"))
 
     async def greet_birthday_kids(self, birthday_kids):
         names = ''
@@ -218,8 +220,12 @@ class Birthday(commands.Cog):
         channel = discord.utils.get(self.bot.guilds[0].channels, id=int(
                                     self.conf.get('BIRTHDAY', 'Announce-ChannelID')))
         if len(birthday_kids) > 1:
+            #await channel.send(embed=discord.Embed(title='@here', description=f"{names} {self.conf.get('BIRTHDAY', 'PluralMessage')}",
+            #                                       colour=discord.Colour(0x00FF97)))
             await channel.send(names + self.conf.get('BIRTHDAY', 'PluralMessage') + ' @here')
         else:
+            #await channel.send(embed=discord.Embed(title='@here', description=f"{names} {self.conf.get('BIRTHDAY', 'SingularMessage')}",
+            #                                       colour=discord.Colour(0x00FF97)))
             await channel.send(names + self.conf.get('BIRTHDAY', 'SingularMessage') + ' @here')
 
     def del_obs_members(self):
@@ -287,11 +293,10 @@ class Birthday(commands.Cog):
     async def remove_birthday_flag(self):
         statement = '''SELECT UserID FROM Birthday WHERE Birthday=1'''
         ret, data = SqlLite('Birthdays').execute_statement(statement)
-
-        await self.remove_birthday_role(data)
-
-        statement = '''UPDATE BIRTHDAY SET birthday=0 WHERE Birthday=1'''
-        ret, err = SqlLite('Birthdays').execute_statement(statement)
+        if len(data) != 0:
+            await self.remove_birthday_role(data)
+            statement = '''UPDATE BIRTHDAY SET birthday=0 WHERE Birthday=1'''
+            ret, err = SqlLite('Birthdays').execute_statement(statement)
 
 
 def add_birthday(user, md, m, d):
