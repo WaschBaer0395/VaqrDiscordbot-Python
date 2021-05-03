@@ -220,13 +220,15 @@ class Birthday(commands.Cog):
         channel = discord.utils.get(self.bot.guilds[0].channels, id=int(
                                     self.conf.get('BIRTHDAY', 'Announce-ChannelID')))
         if len(birthday_kids) > 1:
-            #await channel.send(embed=discord.Embed(title='@here', description=f"{names} {self.conf.get('BIRTHDAY', 'PluralMessage')}",
-            #                                       colour=discord.Colour(0x00FF97)))
-            await channel.send(names + self.conf.get('BIRTHDAY', 'PluralMessage') + ' @here')
+            await channel.send('@here')
+            await channel.send(embed=discord.Embed(description=f"{names} {self.conf.get('BIRTHDAY', 'PluralMessage')}",
+                                                   colour=discord.Colour(0x00FF97)))
+            #await channel.send(names + self.conf.get('BIRTHDAY', 'PluralMessage') + ' @here')
         else:
-            #await channel.send(embed=discord.Embed(title='@here', description=f"{names} {self.conf.get('BIRTHDAY', 'SingularMessage')}",
-            #                                       colour=discord.Colour(0x00FF97)))
-            await channel.send(names + self.conf.get('BIRTHDAY', 'SingularMessage') + ' @here')
+            await channel.send('@here')
+            await channel.send(embed=discord.Embed(description=f"{names} {self.conf.get('BIRTHDAY', 'SingularMessage')}",
+                                                   colour=discord.Colour(0x00FF97)))
+            #await channel.send(names + self.conf.get('BIRTHDAY', 'SingularMessage') + ' @here')
 
     def del_obs_members(self):
         statement = '''SELECT UserID FROM Birthday'''
