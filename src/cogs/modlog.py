@@ -62,7 +62,7 @@ class ModLog(commands.Cog):
         embed = discord.Embed(title="Member Joined", colour=discord.Colour(0xd03b9))
 
         image: member.avatar.url
-        embed.set_thumbnail(url=image)
+        embed.set_thumbnail(url=member.avatar)
         embed.set_footer(text=f"User ID: {member.id} | Joined at:")
 
         embed.add_field(name=f"<@{member.id}>", value=f"{member.name}{member.discriminator}")
