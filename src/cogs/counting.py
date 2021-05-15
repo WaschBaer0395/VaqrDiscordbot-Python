@@ -53,8 +53,13 @@ class Counting(commands.Cog):
     async def set_counting(self, ctx, channel: commands.Greedy[discord.TextChannel]):
         '''Admin Only!!, setup counting channel'''
         if len(channel) > 1:
-            await ctx.send(discord.Embed(description=f"Counting can only be applied in 1 channel. Please try again.",
-                                         colour=discord.Colour(0xbf212f)))
+            await ctx.send(embed=discord.Embed(description=f"Counting can only be applied in 1 channel. Please try again.",
+                                               colour=discord.Colour(0xbf212f)))
+
+            return
+        elif len(channel) <= 0:
+            await ctx.send(embed=discord.Embed(description=f"Please enter a channel",
+                                               colour=discord.Colour(0xbf212f)))
 
             return
         else:
