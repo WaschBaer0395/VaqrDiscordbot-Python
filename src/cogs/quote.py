@@ -23,6 +23,19 @@ class Quotes(commands.Cog):
             'Name': 'None',
             'ID': 'None',
         }
+        self.pride = [
+            '0xe40303',     # red
+            '0xff8c00',     # orange
+            '0xffed00',     # yellow
+            '0x008026',     # green
+            '0x004dff',     # blue
+            '0x750787',     # purple
+            '0xFFFFFE',     # white
+            '0xF7A8B8',     # pink
+            '0x55CDFC',     # lightblue
+            '0x453326',     # brown
+            '0x000001'      # black
+        ]
         self.init_config()
 
     def init_db(self):
@@ -128,8 +141,8 @@ class Quotes(commands.Cog):
                         embed=discord.Embed(
                             description=f"The Quote you entered, has the wrong format Please try again.\n"
                                         f"the needed format is \n"
-                                        f"`\"Quote\" - Name` or\n"
-                                        f"`\"Quote\" - @person`",
+                                        f"`v!quote add \"Quote\" - Name` or\n"
+                                        f"`v!quote add \"Quote\" - @person`",
                             colour=discord.Colour(0xbf212f)))
             else:
                 await ctx.send(
@@ -168,20 +181,21 @@ class Quotes(commands.Cog):
         return quote_id
 
     async def post_quote(self, quote_nr):
-        random_number = random.randint(0, 16777215)
-        hex_number = str(hex(random_number))
-        color = '0x' + hex_number[2:]
+        #random_number = random.randint(0, 16777215)
+        #hex_number = str(hex(random_number))
+        #color = '0x' + hex_number[2:]
+        c_index = (quote_nr-1) % 11
 
         statement = '''SELECT ROWID, * FROM Quotes WHERE rowid = ?'''
         args = (quote_nr,)
         quote = self.db.execute_statement(statement, args)[1][0]
 
-        embed = await self.generate_quote_embed(quote, color)
+        embed = await self.generate_quote_embed(quote, self.pride[c_index])
         quotes_channel = self.bot.get_channel(int(self.conf.get('QUOTES', 'ID')))
         await quotes_channel.send(embed=embed)
 
         statement = '''UPDATE Quotes SET MessageID=?, MessageColor=? WHERE rowid = ?'''
-        args = (quotes_channel.last_message_id, str(color), quote[0],)
+        args = (quotes_channel.last_message_id, str(self.pride[c_index]), quote[0],)
         self.db.execute_statement(statement, args)
 
     async def generate_quote_embed(self, quote, color=None):
