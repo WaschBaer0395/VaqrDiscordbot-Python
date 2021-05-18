@@ -61,4 +61,4 @@ OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
 TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
 
-Source: [http://opensource.org/licenses/ISC](http://opensource.org/li
+Source: [http://opensource.org/licenses/ISC](http://opensource.org/licenses/ISC)
