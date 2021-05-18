@@ -8,7 +8,7 @@ It's meant to be a bot to replace most of the needed functions for the Discord S
 
 ## Command List
 
-**[Full list of supported commands can be found here](https://github.com/yogensia/korean-lady-discord-bot/blob/master/COMMANDS.md#koreanlady-discord-bot).**
+**[Full list of supported commands can be found here](https://github.com/WaschBaer0395/VaqrDiscordbot-Python/blob/master/COMMANDS.md#VaqrDiscordbot-Python).**
 
 ## Building requirements
 
