@@ -56,7 +56,7 @@ class Quotes(commands.Cog):
     @commands.command(aliases=['q_set', 'q_init', 'qinit', 'qset'], no_pm=True)
     @commands.has_permissions(manage_guild=True)
     async def setup_quotes(self, ctx, channel: commands.Greedy[discord.TextChannel]):
-        '''Admin Only!!, setup Quotes channel'''
+        """Admin Only!!, setup Quotes channel"""
         if len(channel) > 1:
             await ctx.send(embed=discord.Embed(description=f"Quotes can only be saved in 1 channel. Please try again.",
                                                colour=discord.Colour(0xbf212f)))
@@ -181,9 +181,9 @@ class Quotes(commands.Cog):
         return quote_id
 
     async def post_quote(self, quote_nr):
-        #random_number = random.randint(0, 16777215)
-        #hex_number = str(hex(random_number))
-        #color = '0x' + hex_number[2:]
+        # random_number = random.randint(0, 16777215)
+        # hex_number = str(hex(random_number))
+        # color = '0x' + hex_number[2:]
         c_index = (quote_nr-1) % 11
 
         statement = '''SELECT ROWID, * FROM Quotes WHERE rowid = ?'''
@@ -219,13 +219,13 @@ class Quotes(commands.Cog):
 
 async def channel_set(ctx, config, channel, reassign):
     if reassign:
-        embed = discord.Embed(title="Channel Confirm", colour=discord.Colour(0x269a78)
-                              , description="Are you sure you want the Bot to post the Quotes in the selected channel ?")
+        embed = discord.Embed(title="Channel Confirm", colour=discord.Colour(0x269a78),
+                              description="Are you sure you want the Bot to post the Quotes in the selected channel ?")
         c_session = ConfirmerSession(ctx, page=embed)
         response, embedctx = await c_session.run()
     else:
-        embed = discord.Embed(title="Setting New Channel", colour=discord.Colour(0x269a78)
-                              , description="Setting channel")
+        embed = discord.Embed(title="Setting New Channel", colour=discord.Colour(0x269a78),
+                              description="Setting channel")
         embedctx = await ctx.send(embed=embed)
         response = True
     if response is True:
