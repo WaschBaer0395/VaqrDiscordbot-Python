@@ -13,6 +13,7 @@ class SqlLite:
 
     def create_connection(self, filename):
         """ create a database connection to the SQLite database
+
                 specified by the db_file
             :param filename: database filename ( without file extension )
         """
@@ -26,6 +27,7 @@ class SqlLite:
 
     def create_table(self, create_table_sql):
         """ create a table from the create_table_sql statement
+
         :param create_table_sql: a CREATE TABLE statement
         :return:
         """

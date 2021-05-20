@@ -43,7 +43,7 @@ class Birthday(commands.Cog):
 
     @commands.command()
     async def bset(self, ctx, *, args=None):
-        """<birthday> Setup your Birthday by entering the date"""
+        """<birthday> Setup your Birthday by entering the date."""
         day, month, err = get_date_month(args)
         config, self.settings = check_config('BIRTHDAY', self.settings)
         if err:
@@ -65,8 +65,7 @@ class Birthday(commands.Cog):
 
     @commands.command()
     async def btime(self, ctx, *, arg=''):
-        """<Time> Setup the Announce Time"""
-        in_time = ''
+        """<Time> Setup the Announce Time."""
         try:
             in_time = datetime.strptime(arg, "%I:%M %p")
         except ValueError:
@@ -102,7 +101,7 @@ class Birthday(commands.Cog):
 
     @commands.command()
     async def brole(self, ctx, role: commands.Greedy[discord.Role]):
-        """<@Role> Setup your Birthdayrole"""
+        """<@Role> Setup your Birthdayrole."""
 
         if len(role) == 0 or len(role) > 1 or type(role[0]) != discord.Role:
             await ctx.send(embed=discord.Embed(description=f"Syntax is `bset <@role>`\n"
@@ -118,7 +117,7 @@ class Birthday(commands.Cog):
     @commands.command()
     @commands.has_permissions(manage_guild=True)
     async def bforcedel(self, ctx, member: commands.Greedy[discord.Member]):
-        """<user> Force Delete a birthday"""
+        """<user> Force Delete a birthday."""
         del_birthday(member[0].id)
         await ctx.send(embed=discord.Embed(description=f"Birthday for : <@{member[0].id}>, was deleted",
                                            colour=discord.Colour(0x00FF97)))
@@ -126,7 +125,7 @@ class Birthday(commands.Cog):
 
     @commands.command()
     async def bdel(self, ctx):
-        """Delete your birthday from the DB"""
+        """Delete your birthday from the DB."""
         del_birthday(ctx.author.id)
         await ctx.send(embed=discord.Embed(description=f"Your Birthday was deleted",
                                            colour=discord.Colour(0x00FF97)))
@@ -135,7 +134,7 @@ class Birthday(commands.Cog):
     @commands.command(no_pm=True)
     @commands.has_permissions(manage_guild=True)
     async def binit(self, ctx, channel: commands.Greedy[discord.TextChannel]):
-        """<commandChannel> <announceChannel> Setup Birthday Channel"""
+        """<commandChannel> <announceChannel> Setup Birthday Channel."""
         if len(channel) != 2:
             await ctx.send(embed=discord.Embed(description=f"Syntax is `bset <birthdaychannel> <Accouncementchannel>`\n"
                                                            f"you have either selected only 1, or more than 2 channels",

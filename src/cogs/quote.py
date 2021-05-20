@@ -56,14 +56,14 @@ class Quotes(commands.Cog):
     @commands.command(aliases=['q_set', 'q_init', 'qinit', 'qset'], no_pm=True)
     @commands.has_permissions(manage_guild=True)
     async def setup_quotes(self, ctx, channel: commands.Greedy[discord.TextChannel]):
-        """Admin Only!!, setup Quotes channel"""
+        """Admin Only!!, setup Quotes channel."""
         if len(channel) > 1:
-            await ctx.send(embed=discord.Embed(description=f"Quotes can only be saved in 1 channel. Please try again.",
+            await ctx.send(embed=discord.Embed(description="Quotes can only be saved in 1 channel. Please try again.",
                                                colour=discord.Colour(0xbf212f)))
 
             return
         elif len(channel) <= 0:
-            await ctx.send(embed=discord.Embed(description=f"Please enter a channel",
+            await ctx.send(embed=discord.Embed(description="Please enter a channel",
                                                colour=discord.Colour(0xbf212f)))
 
             return

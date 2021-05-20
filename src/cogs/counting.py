@@ -83,17 +83,16 @@ class Counting(commands.Cog):
         if int(config.get('COUNTING', 'id')) != ctx.channel.id:
             if args == 'help' or None:
                 embed = discord.Embed(title="Counting usage",
-                                      description=f"\n"
-                                                  f"`v!c argument` \n"
-                                                  f"or\n"
-                                                  f"`v!count argument`\n"
-                                                  f"\n"
-                                                  f"**Arguments:** \n"
-                                                  f"\n"
-                                                  f"`list`\n`top10`\n`leaderboard` \n"
-                                                  f"for showing the leaderboard \n"
-                                                  f"\n"
-                                                  f"**Example:**  `v!c leaderboard`",
+                                      description="`v!c argument` \n"
+                                                  "or\n"
+                                                  "`v!count argument`\n"
+                                                  "\n"
+                                                  "**Arguments:** \n"
+                                                  "\n"
+                                                  "`list`\n`top10`\n`leaderboard` \n"
+                                                  "for showing the leaderboard \n"
+                                                  "\n"
+                                                  "**Example:**  `v!c leaderboard`",
                                       colour=discord.Colour(0x37b326))
                 await ctx.send(embed=embed)
             elif args == 'leaderboard' or args == 'top10' or args == 'list':
@@ -254,7 +253,7 @@ async def channel_set(ctx, config, channel, reassign):
     if response is True:
         config = configset(config, channel[0])
     else:
-        embed = discord.Embed(description=f"The counting channel was not set",
+        embed = discord.Embed(description="The counting channel was not set",
                               colour=discord.Colour(0xbf212f))
         await embedctx.edit(embed=embed)
         return embedctx, config

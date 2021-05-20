@@ -58,6 +58,7 @@ async def is_audio_requester(ctx):
 
 
 class Music(commands.Cog):
+
     """Bot commands to help play music."""
 
     def __init__(self, bot):
@@ -77,7 +78,7 @@ class Music(commands.Cog):
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
     async def leave(self, ctx):
-        """Leaves the voice channel"""
+        """Leaves the voice channel."""
         client = ctx.guild.voice_client
         state = self.get_state(ctx.guild)
         if client and client.channel:
@@ -258,8 +259,8 @@ class Music(commands.Cog):
                         state.playlist.pop(index)
             else:
                 embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1),
-                                      description=f"Specify the index for the song to remove "
-                                                  f"(or use \"next\" and \"last\"")
+                                      description="Specify the index for the song to remove "
+                                                  "(or use \"next\" and \"last\"")
                 await ctx.send(embed=embed)
 
     @commands.command(aliases=["move"])
@@ -295,7 +296,6 @@ class Music(commands.Cog):
     @commands.guild_only()
     async def play(self, ctx, *, url):
         """Plays media hosted at <url> or conducts a search."""
-
         client = ctx.guild.voice_client
         state = self.get_state(ctx.guild)  # get the guild's state
 

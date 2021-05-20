@@ -5,10 +5,12 @@ from collections import OrderedDict
 
 
 class ConfirmerSession:
+
     """Class that interactively paginates
     a set of embed using reactions."""
 
     def __init__(self, ctx, timeout=60, page='', color=discord.Color.green(), footer=''):
+        """Confirmer init."""
         self.footer = footer  # footer message
         self.ctx = ctx  # ctx
         self.timeout = timeout  # when the reactions get cleared, int[seconds]
@@ -80,7 +82,6 @@ class ConfirmerSession:
     # all functions with await must be async
     async def accept(self):
         """Accept the prompt."""
-
         try:
             await self.message.clear_reactions()
         except:
