@@ -36,6 +36,10 @@ You can find the source code in the `src` directory.
 
 If you are new to making bots you can check the [discord.py getting started](https://discordpy.readthedocs.io/en/stable/#getting-started) for lots of documentation and resources.
 
+## Changelog
+
+All notable changes for each version of this project are documented in the [changelog](https://github.com/WaschBaer0395/VaqrGamingDiscordbot-Python/blob/master/CHANGELOG.md).
+
 ## Credits & Acknowledgments
 
 Vaqrgaming Bot is written in Python by [WaschBaer__](https://github.com/WaschBaer0395) and  [Coco](https://github.com/cococow123) .
