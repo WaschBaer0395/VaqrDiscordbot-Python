@@ -13,23 +13,6 @@ It's meant to be a bot to replace most of the needed functions for the Discord S
 
 **[Full list of supported commands can be found here](https://github.com/WaschBaer0395/VaqrDiscordbot-Python/blob/master/COMMANDS.md#VaqrDiscordbot-Python).**
 
-## Building requirements
-
-
-
-## Building & creating your own bot
-
-This bot is open source so that anyone can download it, modify it and run it.
-
-[Source code this project can be downloaded here](https://github.com/WaschBaer0395/VaqrDiscordbot-Python/archive/refs/heads/master.zip).
-
-Or directly from your code editor:
-
-```bash
-git clone https://github.com/WaschBaer0395/VaqrDiscordbot-Python.git
-cd VaqrDiscordbot-Python
-```
-
 ### Outline
 
 You can find the source code in the `src` directory.
