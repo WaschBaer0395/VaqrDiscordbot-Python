@@ -153,3 +153,4 @@ fabric.properties
 /src/data/Birthdays.sqlite
 /src/data/Birthdays - Kopie.sqlite
 /bot.ini
+/src/data/Quotes.sqlite
