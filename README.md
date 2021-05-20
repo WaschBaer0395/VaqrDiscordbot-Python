@@ -3,7 +3,7 @@
 [![PyPI pyversions](https://img.shields.io/pypi/pyversions/ansicolortags.svg)](https://pypi.python.org/pypi/ansicolortags/)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/40d1da68d7ab49cda6815a6ea52733e4)](https://www.codacy.com?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=WaschBaer0395/VaqrDiscordbot-Python&amp;utm_campaign=Badge_Grade)
 [![ISC License](https://img.shields.io/badge/license-ISC-green)](https://github.com/WaschBaer0395/VaqrDiscordBot-Python/blob/master/LICENSE) 
-[![GitHub release](https://img.shields.io/github/release/Naereen/StrapDown.js.svg)](https://GitHub.com/WaschBaer0395/VaqrDiscordbot-Python/releases/)
+[![Version](https://img.shields.io/github/package-json/v/WaschBaer0395/VaqrDiscordbot-Python)](https://GitHub.com/WaschBaer0395/VaqrDiscordbot-Python/releases/)
 
 **Vaqrgaming Discord Bot** is a Discord bot coded in Python using the [Discord.py](https://discordpy.readthedocs.io/en/stable/) library.
 
