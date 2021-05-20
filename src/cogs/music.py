@@ -364,7 +364,7 @@ def get_embed(self, video):
     embed = discord.Embed(title=video['title'], description=video['uploader'], url=video['video_url'])
     embed.set_footer(
         text=f"Requested by {video['requested_by'].name}",
-        icon_url=video['requested_by'].avatar.url)
+        icon_url=video['requested_by'].avatar_url)
     if video['thumbnail']:
         embed.set_thumbnail(url=video['thumbnail'])
     return embed
@@ -435,17 +435,13 @@ def check_config():
     config.read('settings.ini')
 
     # checking for existing config
-    if config.has_section('MUSIC'):
-        maxVolume = config.get('MUSIC', 'max_volume')
-        voteSkip = config.get('MUSIC', 'vote_skip'),
-        voteSkipRatio = config.get('MUSIC', 'vote_skip_ratio'),
-    else:
+    if not config.has_section('MUSIC'):
         # writing default config, incase none has been found
         config['MUSIC'] = \
             {
-                'max_volume': 250,
-                'vote_skip': True,
-                'vote_skip_ratio': 0.5,
+                'max_volume': '250',
+                'vote_skip': 'True',
+                'vote_skip_ratio': '0.5',
             }
         try:
             with open('settings.ini', 'w+') as configfile:

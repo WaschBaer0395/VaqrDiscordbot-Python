@@ -61,7 +61,7 @@ class ModLog(commands.Cog):
         
         embed = discord.Embed(title="Member Joined", colour=discord.Colour(0xd03b9))
 
-        image: member.avatar.url
+        image: member.avatar_url
         embed.set_thumbnail(url=image)
         embed.set_footer(text=f"User ID: {member.id} | Joined at:")
 
@@ -73,9 +73,9 @@ class ModLog(commands.Cog):
     @commands.Cog.listener()
     async def on_member_remove(self, member):
         embed =discord.Embed(color=discord.Color.red())
-        embed.set_author(name="Member Left", icon_url=member.avatar.url)
+        embed.set_author(name="Member Left", icon_url=member.avatar_url)
         embed.description=f"{member.mention} | {member.name}#{member.discriminator}"
-        embed.set_thumbnail(url=member.avatar.url)
+        embed.set_thumbnail(url=member.avatar_url)
         embed.set_footer(text=f"User ID: {member.id}")
 
         return await send_embed_to_log(self,  event="on_member_leave", embed=embed, timestamp=True)
@@ -84,7 +84,7 @@ class ModLog(commands.Cog):
     async def on_member_update(self, before, after):
         print("member update")
         e=discord.Embed(color=discord.Color.blue())
-        e.set_author(name="Member Updated", icon_url=after.avatar.url)
+        e.set_author(name="Member Updated", icon_url=after.avatar_url)
         e.set_footer(text=f"User ID: {after.id}")
         r_before = [role.id for role in before.roles]
         r_after = [role.id for role in after.roles]
@@ -106,7 +106,7 @@ class ModLog(commands.Cog):
     async def on_message_delete(self, message):
         if(message.author.bot == False):
             e=discord.Embed(color=discord.Color.red())
-            e.set_author(name=f'{message.author}', icon_url=message.author.avatar.url)
+            e.set_author(name=f'{message.author}', icon_url=message.author.avatar_url)
             e.description=f"**Message sent by {message.author.mention} deleted in {message.channel.mention}.**"
             if len(message.content) > 1024:
                 content = message.content[:1021] + "..."
@@ -130,7 +130,7 @@ class ModLog(commands.Cog):
     @commands.Cog.listener()
     async def on_message_edit(self, before, after):
         e=discord.Embed(color=discord.Color.blue())
-        e.set_author(name=f"{before.author}", icon_url=f"{before.author.avatar.url}")
+        e.set_author(name=f"{before.author}", icon_url=f"{before.author.avatar_url}")
         e.set_footer(text=f"User ID: {after.author.id}")
         if before.content != after.content:
             e.description=f"**Message edited in {before.channel.mention}. [Jump to message](https://discord.com/channels/{after.guild.id}/{after.channel.id}/{after.id}/)**"
@@ -249,7 +249,7 @@ class ModLog(commands.Cog):
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
         e=discord.Embed()
-        e.set_author(name=f"{member}", icon_url=member.avatar.url)
+        e.set_author(name=f"{member}", icon_url=member.avatar_url)
         if before.channel != after.channel:
             if before.channel == None and after.channel != None:
                 e.description=f"{member.mention} **joined voice channel {after.channel.mention}**"
