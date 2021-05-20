@@ -1,18 +1,13 @@
-import json
-
 import discord
 import configparser
-
 import asyncio
 import youtube_dl
 import logging
 import math
-from urllib import request
 
 from discord.ext import commands
-from distutils.util import strtobool
-
 from ext.music import Media
+
 
 async def audio_playing(ctx, respond=True):
     """Checks that audio is currently playing before continuing."""
@@ -20,7 +15,7 @@ async def audio_playing(ctx, respond=True):
     if client and client.channel and client.source:
         return True
     else:
-        if(respond):
+        if respond:
             embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1), description="The queue is empty")
             await ctx.send(embed=embed)
         return False
@@ -33,9 +28,11 @@ async def in_voice_channel(ctx):
     if voice and bot_voice and voice.channel and bot_voice.channel and voice.channel == bot_voice.channel:
         return True
     else:
-        embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1), description="You need to be in the voice channel to do that.")
+        embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1),
+                              description="You need to be in the voice channel to do that.")
         await ctx.send(embed=embed)
         return False
+
 
 async def in_voice(ctx):
     """Checks that the command sender is in the same voice channel as the bot."""
@@ -54,10 +51,10 @@ async def is_audio_requester(ctx):
     if permissions.administrator or state.is_requester(ctx.author):
         return True
     else:
-        embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1), description="You need to be the song requester to do that")
+        embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1),
+                              description="You need to be the song requester to do that")
         await ctx.send(embed=embed)
         return False
-
 
 
 class Music(commands.Cog):
@@ -67,7 +64,6 @@ class Music(commands.Cog):
         self.bot = bot
         self.states = {}
         self.bot.add_listener(self.on_voice_state_update, "on_voice_state_update")
-
 
     def get_state(self, guild):
         """Gets the state for `guild`, creating it if it does not exist."""
@@ -101,7 +97,8 @@ class Music(commands.Cog):
                 channel = ctx.author.voice.channel
                 await channel.connect()
             else:
-                embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1), description="You need to be in the voice channel to do that.")
+                embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1),
+                                      description="You need to be in the voice channel to do that.")
                 await ctx.send(embed=embed)
 
         in_vc = await in_voice_channel(ctx)
@@ -111,19 +108,9 @@ class Music(commands.Cog):
         if in_vc:
             client = ctx.guild.voice_client
             if is_playing and ctx.author.voice is not None and ctx.author.voice.channel is not None:
-                await self._pause_audio(ctx, client)
+                await _pause_audio(ctx, client)
             else:
                 self._play_song(client, state, state.now_playing)
-
-    async def _pause_audio(self, ctx, client):
-        if client.is_paused():
-            client.resume()
-            embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1), description="▶️ Music resumed")
-            await ctx.send(embed=embed)
-        else:
-            client.pause()
-            embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1), description="⏸️ Music paused")
-            await ctx.send(embed=embed)
 
     @commands.command(aliases=["vol", "v"])
     @commands.guild_only()
@@ -149,7 +136,8 @@ class Music(commands.Cog):
 
         state.volume = float(volume) / 100.0
         client.source.volume = state.volume  # update the AudioSource's volume to match
-        embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1), description=f"Music volume set to {state.volume}%")
+        embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1),
+                              description=f"Music volume set to {state.volume}%")
         await ctx.send(embed=embed)
 
     @commands.command()
@@ -179,7 +167,8 @@ class Music(commands.Cog):
                 f"{ctx.author.mention} voted to skip ({len(state.skip_votes)}/{required_votes} votes)"
             )
         else:
-            embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1), description="Vote to skip is disabled :(")
+            embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1),
+                                  description="Vote to skip is disabled :(")
             await ctx.send(embed=embed)
 
     def _vote_skip(self, channel, member):
@@ -191,8 +180,7 @@ class Music(commands.Cog):
         users_in_channel = len([
             member for member in channel.members if not member.bot
         ])  # don't count bots
-        if (float(len(state.skip_votes)) /
-                users_in_channel) >= config.get('MUSIC', 'vote_skip_ratio'):
+        if (float(len(state.skip_votes)) / users_in_channel) >= config.get('MUSIC', 'vote_skip_ratio'):
             # enough members have voted to skip, so skip the song
             print(f"Enough votes, skipping...")
             channel.guild.voice_client.stop()
@@ -201,9 +189,11 @@ class Music(commands.Cog):
         state.now_playing = song
         state.skip_votes = set()  # clear skip votes
         source = discord.PCMVolumeTransformer(
-            discord.FFmpegPCMAudio(song.stream_url, before_options='-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5'), volume=state.volume)
+            discord.FFmpegPCMAudio(song.stream_url,
+                                   before_options='-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5'),
+            volume=state.volume)
 
-        def after_playing(err):
+        def after_playing():
             if len(state.playlist) > 0:
                 next_song = state.playlist.pop(0)
                 self._play_song(client, state, next_song)
@@ -218,29 +208,14 @@ class Music(commands.Cog):
     async def nowplaying(self, ctx):
         """Displays information about the current song."""
         state = self.get_state(ctx.guild)
-        message = await ctx.send("", embed=state.now_playing.get_embed())
+        await ctx.send("", embed=state.now_playing.get_embed())
 
     @commands.command(aliases=["q", "playlist"])
     @commands.guild_only()
     async def queue(self, ctx):
         """Displays the current play queue."""
         state = self.get_state(ctx.guild)
-        await ctx.send(embed=self._queue_text(state.playlist))
-
-    def _queue_text(self, queue):
-        """Returns a block of text describing a given song queue."""
-        embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1))
-        if len(queue) > 0:
-            embed.description = f"{len(queue)} songs in the queue"
-            message = ''
-           
-            for index, song in enumerate(queue):
-                message += f"  `{index+1}.` **{song.title}** (requested by {song.requested_by.mention})\n"# add individual songs
-            embed.add_field(name='Song Queue', value=message)
-            return embed
-        else:
-            embed.description = "The queue is empty"
-            return embed
+        await ctx.send(embed=_queue_text(state.playlist))
 
     @commands.command(aliases=["cq"])
     @commands.guild_only()
@@ -258,43 +233,49 @@ class Music(commands.Cog):
     async def remove(self, ctx, *args):
         """Remove a song at an index"""
         state = self.get_state(ctx.guild)
-        
-        if(len(state.playlist) > 0):
-            if(len(args) > 0):
-                if(args[0] == "last"):
+
+        if len(state.playlist) > 0:
+            if len(args) > 0:
+                if args[0] == "last":
                     index = len(state.playlist) - 1
-                    embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1), description=f"🗑️ Removed **{state.playlist[index].title}** from the queue")
+                    embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1),
+                                          description=f"🗑️ Removed **{state.playlist[index].title}** from the queue")
                     await ctx.send(embed=embed)
                     state.playlist.pop()
-                if(args[0] == "next"):
-                    embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1), description=f"🗑️ Removed **{state.playlist[0].title}** from the queue")
+                if args[0] == "next":
+                    embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1),
+                                          description=f"🗑️ Removed **{state.playlist[0].title}** from the queue")
                     await ctx.send(embed=embed)
                     state.playlist.pop(0)
-                
-                if(args[0].isnumeric()):
+
+                if args[0].isnumeric():
                     index = int(args[0]) - 1
                     if 0 <= index <= len(state.playlist):
-                        embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1), description=f"🗑️ Removed **{state.playlist[index].title}** from the queue")
+                        embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1),
+                                              description=f"🗑️ Removed **{state.playlist[index].title}** "
+                                                          f"from the queue")
                         await ctx.send(embed=embed)
                         state.playlist.pop(index)
             else:
-                embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1), description=f"Specify the index for the song to remove (or use \"next\" and \"last\"")
+                embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1),
+                                      description=f"Specify the index for the song to remove "
+                                                  f"(or use \"next\" and \"last\"")
                 await ctx.send(embed=embed)
 
     @commands.command(aliases=["move"])
     @commands.guild_only()
     @commands.check(audio_playing)
     async def jump(self, ctx, song: int, new_index: int):
-        """Moves song to an index. (usage: jump <old> <new>)"""
+        """Moves song to an index. (usage: jump <old> <new>)."""
         state = self.get_state(ctx.guild)  # get state for this guild
         if 0 <= song <= len(state.playlist) and 1 <= new_index:
             song = state.playlist.pop(song - 1)  # take song at index...
             state.playlist.insert(new_index - 1, song)  # and insert it.
 
-            await ctx.send(embed=self._queue_text(state.playlist))
+            await ctx.send(embed=_queue_text(state.playlist))
         else:
             raise commands.CommandError("You must use a valid index.")
-    
+
     @commands.command(aliases=["priority"])
     @commands.guild_only()
     @commands.check(audio_playing)
@@ -306,7 +287,7 @@ class Music(commands.Cog):
             song = state.playlist.pop(song - 1)  # take song at index...
             state.playlist.insert(0, song)  # and insert it.
 
-            await ctx.send(embed=self._queue_text(state.playlist))
+            await ctx.send(embed=_queue_text(state.playlist))
         else:
             raise commands.CommandError("You must use a valid index.")
 
@@ -322,23 +303,23 @@ class Music(commands.Cog):
             try:
                 video = Media(url, ctx.author)
             except youtube_dl.DownloadError as e:
-                logging.warn(f"Error downloading video: {e}")
+                logging.warning(f"Error downloading video: {e}")
                 await ctx.send("There was an error downloading your video, sorry.")
                 return
             state.playlist.append(video)
-            message = await ctx.send(
+            await ctx.send(
                 "Added to queue.", embed=video.get_embed())
         else:
             if ctx.author.voice is not None and ctx.author.voice.channel is not None:
                 channel = ctx.author.voice.channel
                 try:
                     video = Media(url, ctx.author)
-                except youtube_dl.DownloadError as e:
+                except youtube_dl.DownloadError:
                     await ctx.send("There was an error downloading your video, sorry.")
                     return
                 client = await channel.connect()
                 self._play_song(client, state, video)
-                message = await ctx.send("", embed=video.get_embed())
+                await ctx.send("", embed=video.get_embed())
                 logging.info(f"Now playing '{video.title}'")
             else:
                 raise commands.CommandError(
@@ -347,12 +328,40 @@ class Music(commands.Cog):
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
         if before.channel != after.channel and member.id == 836383111935426621:
-            if before.channel != None and after.channel == None:
+            if not before.channel and after.channel is None:
                 state = self.get_state(member.guild)
-                if state != None:
+                if not state:
                     client = member.guild.voice_client
-                    if(client != None):
+                    if not client:
                         client.pause()
+
+
+async def _pause_audio(ctx, client):
+    if client.is_paused():
+        client.resume()
+        embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1), description="▶️ Music resumed")
+        await ctx.send(embed=embed)
+    else:
+        client.pause()
+        embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1), description="⏸️ Music paused")
+        await ctx.send(embed=embed)
+
+
+def _queue_text(queue):
+    """Returns a block of text describing a given song queue."""
+    embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1))
+    if len(queue) > 0:
+        embed.description = f"{len(queue)} songs in the queue"
+        message = ''
+
+        for index, song in enumerate(queue):
+            message += f"  `{index + 1}.` **{song.title}** " \
+                       f"(requested by {song.requested_by.mention})\n"  # add individual songs
+        embed.add_field(name='Song Queue', value=message)
+        return embed
+    else:
+        embed.description = "The queue is empty"
+        return embed
 
 
 def check_config():
@@ -361,16 +370,16 @@ def check_config():
 
     # checking for existing config
     if config.has_section('MUSIC'):
-        maxVolume = config.get('MUSIC', 'max_volume')
-        voteSkip = config.get('MUSIC', 'vote_skip'),
-        voteSkipRatio = config.get('MUSIC', 'vote_skip_ratio'),
+        config.get('MUSIC', 'max_volume')
+        config.get('MUSIC', 'vote_skip'),
+        config.get('MUSIC', 'vote_skip_ratio'),
     else:
         # writing default config, incase none has been found
         config['MUSIC'] = \
             {
-                'max_volume': 250,
-                'vote_skip': True,
-                'vote_skip_ratio': 0.5,
+                'max_volume': '250',
+                'vote_skip': 'True',
+                'vote_skip_ratio': '0.5',
             }
         try:
             with open('settings.ini', 'w+') as configfile:
@@ -379,8 +388,10 @@ def check_config():
             print('```error writing config: ' + str(e) + ' ```')
     return config
 
+
 def setup(bot):
     bot.add_cog(Music(bot))
+
 
 class GuildState:
     """Helper class managing per-guild state."""

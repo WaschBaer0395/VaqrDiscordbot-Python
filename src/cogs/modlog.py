@@ -1,11 +1,10 @@
 import discord
 import configparser
-from discord.ext import commands
-
-from distutils.util import strtobool
-
-from datetime import datetime
 import pytz
+
+from discord.ext import commands
+from distutils.util import strtobool
+from datetime import datetime
 
 channelId = None
 logEvents = []
@@ -24,7 +23,7 @@ class ModLog(commands.Cog):
     @commands.command(aliases=['log'], no_pm=True)
     @commands.has_permissions(manage_guild=True)
     async def modlog(self, ctx, *args):
-        """Admin Only!!, setup logging channel"""
+        """Admin Only!!, setup logging channel."""
 
         config = check_config()
 
@@ -32,10 +31,10 @@ class ModLog(commands.Cog):
 
             if args[0] == "setchannel":
                 if len(args) == 2:
-                    id = args[1].replace("<", "").replace("#", "").replace(">", "")
-                    if id.isnumeric():
+                    _id = args[1].replace("<", "").replace("#", "").replace(">", "")
+                    if _id.isnumeric():
 
-                        if self.bot.get_channel(int(id)) is not None:
+                        if self.bot.get_channel(int(_id)) is not None:
                             config.set('MODLOG', 'id', str(id))
                             save_config(config)
 
@@ -265,17 +264,17 @@ class ModLog(commands.Cog):
         if before.channel != after.channel:
             if before.channel is None and after.channel is not None:
                 e.description = f"{member.mention} **joined voice channel {after.channel.mention}**"
-                e.color = discord.Color.green()
+                e.colour = discord.Color.green()
                 e.set_footer(text=f"Channel ID: {after.channel.id}")
                 return await send_embed_to_log(self, event="on_member_join_vc", embed=e, timestamp=True)
             elif before.channel is not None and after.channel is None:
                 e.description = f"{member.mention} **left voice channel {before.channel.mention}**"
-                e.color = discord.Color.red()
+                e.colour = discord.Color.red()
                 e.set_footer(text=f"Channel ID: {before.channel.id}")
                 return await send_embed_to_log(self, event="on_member_leave_vc", embed=e, timestamp=True)
             elif before.channel is not None and after.channel is not None and before.channel != after.channel:
                 e.description = f"{member.mention} **moved from {before.channel.mention} to {after.channel.mention}**"
-                e.color = discord.Color.blue()
+                e.colour = discord.Color.blue()
                 e.set_footer(text=f"Channel ID before: {before.channel.id} | Channel ID after: {after.channel.id}")
                 return await send_embed_to_log(self, event="on_member_moved_vc", embed=e, timestamp=True)
         else:
@@ -283,32 +282,32 @@ class ModLog(commands.Cog):
             if before.mute != after.mute:
                 if after.mute:
                     e.description = f"{member.mention} **was server muted in {after.channel.mention}**"
-                    e.color = discord.Color.red()
+                    e.colour = discord.Color.red()
                 else:
                     e.description = f"{member.mention} **was un-server muted in {after.channel.mention}**"
-                    e.color = discord.Color.green()
+                    e.colour = discord.Color.green()
                 return await send_embed_to_log(self, event="on_member_mute_vc", embed=e, timestamp=True)
             elif before.deaf != after.deaf:
                 if after.deaf:
                     e.description = f"{member.mention} **was server deafened in {after.channel.mention}**"
-                    e.color = discord.Color.red()
+                    e.colour = discord.Color.red()
                 else:
                     e.description = f"{member.mention} **was un-server deafened in {after.channel.mention}**"
-                    e.color = discord.Color.green()
+                    e.colour = discord.Color.green()
                 return await send_embed_to_log(self, event="on_member_deaf_vc", embed=e, timestamp=True)
 
 
 async def send_embed_to_log(self, event, embed, timestamp=False):
     config = check_config()
-    channelId = config.get('MODLOG', 'id')
-    if channelId is not None:
+    _channelId = config.get('MODLOG', 'id')
+    if _channelId is not None:
         if timestamp:
             embed.timestamp = datetime.now(pytz.timezone('US/Pacific'))
 
         event = config.get('MODLOG', event)
         event = strtobool(event)
         if event == 1:
-            logchannel = self.bot.get_channel(int(channelId))
+            logchannel = self.bot.get_channel(int(_channelId))
             return await logchannel.send(embed=embed)
 
 
@@ -324,34 +323,32 @@ def check_config():
 
     # checking for existing config
     if config.has_section('MODLOG'):
-        channelID = config.get('MODLOG', 'ID')
-        logEvents = [
-            config.get('MODLOG', 'on_member_join'),
-            config.get('MODLOG', 'on_member_nickname_change'),
-            config.get('MODLOG', 'on_member_join_vc'),
-            config.get('MODLOG', 'on_member_moved_vc'),
-            config.get('MODLOG', 'on_member_mute_vc'),
-            config.get('MODLOG', 'on_member_deaf_vc'),
-            config.get('MODLOG', 'on_invite_create'),
-            config.get('MODLOG', 'on_member_leave'),
-            config.get('MODLOG', 'on_member_ban'),
-            config.get('MODLOG', 'on_member_kick'),
-            config.get('MODLOG', 'on_message_edit'),
-            config.get('MODLOG', 'on_message_delete'),
-            config.get('MODLOG', 'on_message_bulk_delete'),
-            config.get('MODLOG', 'on_message_pin'),
-            config.get('MODLOG', 'on_message_unpin'),
-            config.get('MODLOG', 'on_channel_create'),
-            config.get('MODLOG', 'on_channel_delete'),
-            config.get('MODLOG', 'on_role_create'),
-            config.get('MODLOG', 'on_role_update'),
-            config.get('MODLOG', 'on_role_give'),
-            config.get('MODLOG', 'on_role_delete'),
-            config.get('MODLOG', 'on_moderator_command'),
-            config.get('MODLOG', 'on_guild_update'),
-            config.get('MODLOG', 'on_invite_create'),
-            config.get('MODLOG', 'on_invite_delete')
-        ]
+        config.get('MODLOG', 'ID')
+        config.get('MODLOG', 'on_member_join')
+        config.get('MODLOG', 'on_member_nickname_change')
+        config.get('MODLOG', 'on_member_join_vc')
+        config.get('MODLOG', 'on_member_moved_vc')
+        config.get('MODLOG', 'on_member_mute_vc')
+        config.get('MODLOG', 'on_member_deaf_vc')
+        config.get('MODLOG', 'on_invite_create')
+        config.get('MODLOG', 'on_member_leave')
+        config.get('MODLOG', 'on_member_ban')
+        config.get('MODLOG', 'on_member_kick')
+        config.get('MODLOG', 'on_message_edit')
+        config.get('MODLOG', 'on_message_delete')
+        config.get('MODLOG', 'on_message_bulk_delete')
+        config.get('MODLOG', 'on_message_pin')
+        config.get('MODLOG', 'on_message_unpin')
+        config.get('MODLOG', 'on_channel_create')
+        config.get('MODLOG', 'on_channel_delete')
+        config.get('MODLOG', 'on_role_create')
+        config.get('MODLOG', 'on_role_update')
+        config.get('MODLOG', 'on_role_give')
+        config.get('MODLOG', 'on_role_delete')
+        config.get('MODLOG', 'on_moderator_command')
+        config.get('MODLOG', 'on_guild_update')
+        config.get('MODLOG', 'on_invite_create')
+        config.get('MODLOG', 'on_invite_delete')
     else:
         # writing default config, incase none has been found
         config['MODLOG'] = \

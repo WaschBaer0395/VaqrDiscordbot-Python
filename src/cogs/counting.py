@@ -50,7 +50,7 @@ class Counting(commands.Cog):
     @commands.command(aliases=['setcounting', 'setcount', 'setupcounting', 'countingchannel', 'sc'], no_pm=True)
     @commands.has_permissions(manage_guild=True)
     async def set_counting(self, ctx, channel: commands.Greedy[discord.TextChannel]):
-        """Admin Only!!, setup counting channel"""
+        """Admin Only!!, setup counting channel."""
         if len(channel) > 1:
             await ctx.send(embed=discord.Embed(
                 description=f"Counting can only be applied in 1 channel. Please try again.",

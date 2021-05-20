@@ -1,11 +1,12 @@
 import discord
-from collections import OrderedDict
 import asyncio
+
+from collections import OrderedDict
 
 
 class ConfirmerSession:
-    '''Class that interactively paginates
-    a set of embed using reactions'''
+    """Class that interactively paginates
+    a set of embed using reactions."""
 
     def __init__(self, ctx, timeout=60, page='', color=discord.Color.green(), footer=''):
         self.footer = footer  # footer message
@@ -40,7 +41,7 @@ class ConfirmerSession:
                 await self.message.add_reaction(reaction)
 
     def react_check(self, reaction, user):
-        '''Check to make sure it only responds to reactions from the sender and on the same message'''
+        """Check to make sure it only responds to reactions from the sender and on the same message."""
         if reaction.message.id != self.message.id:
             return False  # not the same message
         if user.id != self.ctx.author.id:
@@ -49,7 +50,7 @@ class ConfirmerSession:
             return True  # reaction was one of the confirmer emojis
 
     async def run(self):
-        '''Actually runs the confirmer session'''
+        """Actually runs the confirmer session."""
         if not self.running:
             # display the embed
             await self.show_page()
@@ -78,7 +79,7 @@ class ConfirmerSession:
 
     # all functions with await must be async
     async def accept(self):
-        '''Accept the prompt'''
+        """Accept the prompt."""
 
         try:
             await self.message.clear_reactions()
@@ -89,7 +90,7 @@ class ConfirmerSession:
         return True
 
     async def deny(self):
-        '''Deny the prompt'''
+        """Deny the prompt."""
 
         try:
             await self.message.clear_reactions()

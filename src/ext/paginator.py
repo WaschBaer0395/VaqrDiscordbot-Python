@@ -4,10 +4,12 @@ import asyncio
 
 
 class PaginatorSession:
-    '''Class that interactively paginates
-    a set of embed using reactions'''
+    """Class that interactively paginates
+    a set of embed using reactions."""
 
-    def __init__(self, ctx, timeout=60, pages=[], color=discord.Color.green(), footer=''):
+    def __init__(self, ctx, timeout=60, pages=None, color=discord.Color.green(), footer=''):
+        if pages is None:
+            pages = []
         self.footer = footer  # footer message
         self.ctx = ctx  # ctx
         self.timeout = timeout  # when the reactions get cleared, int[seconds]
@@ -58,7 +60,7 @@ class PaginatorSession:
                 await self.message.add_reaction(reaction)
 
     def react_check(self, reaction, user):
-        '''Check to make sure it only responds to reactions from the sender and on the same message'''
+        """Check to make sure it only responds to reactions from the sender and on the same message."""
         if reaction.message.id != self.message.id:
             return False  # not the same message
         if user.id != self.ctx.author.id:
@@ -67,14 +69,16 @@ class PaginatorSession:
             return True  # reaction was one of the pagination emojis
 
     async def run(self):
-        '''Actually runs the paginator session'''
+        """Actually runs the paginator session."""
         if not self.running:
             # defaults to first page
             await self.show_page(0)
         while self.running:
             try:
                 # waits for reaction using react_check
-                reaction, user = await self.ctx.bot.wait_for('reaction_add', check=self.react_check, timeout=self.timeout)
+                reaction, user = await self.ctx.bot.wait_for('reaction_add',
+                                                             check=self.react_check,
+                                                             timeout=self.timeout)
             except asyncio.TimeoutError:
                 self.running = False
                 try:
@@ -95,29 +99,29 @@ class PaginatorSession:
 
     # all functions with await must be async
     async def first_page(self):
-        '''Go to the first page'''
+        """Go to the first page."""
         return await self.show_page(0)
 
     async def last_page(self):
-        '''Go to the last page'''
+        """Go to the last page."""
         return await self.show_page(len(self.pages) - 1)
 
     async def next_page(self):
-        '''Go to the next page'''
+        """Go to the next page."""
         if len(self.pages)-1 < self.current + 1:
             return await self.show_page(self.current)
         else:
             return await self.show_page(self.current + 1)
 
     async def previous_page(self):
-        '''Go to the previous page.'''
+        """Go to the previous page."""
         if 0 == self.current:
             return await self.show_page(self.current)
         else:
             return await self.show_page(self.current - 1)
 
     async def close(self):
-        '''Stop the paginator session.'''
+        """Stop the paginator session."""
         self.running = False
         try:
             await self.message.clear_reactions()
