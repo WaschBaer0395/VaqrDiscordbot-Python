@@ -14,6 +14,7 @@ from pytz import timezone
 class Quotes(commands.Cog):
 
     def __init__(self, bot):
+        """init for Quotes."""
         self.bot = bot
         self.db = SqlLite('Quotes')
         self.init_db()
@@ -103,8 +104,19 @@ class Quotes(commands.Cog):
 
     @commands.command(aliases=['quote_del'], no_pm=True)
     @commands.has_permissions(manage_guild=True)
-    async def del_quote(self, ctx):
-        print(ctx)
+    async def del_quote(self, ctx, arg):
+        """Admin command to delete Quotes."""
+        quote = await self.get_quote(arg)
+        if quote is None:
+            print('Quote not Found')
+        else:
+            try:
+                quotes_channel = self.bot.get_channel(int(self.conf.get('QUOTES', 'ID')))
+                message = await quotes_channel.fetch_message(quote[6])
+                await message.delete()
+                await self.db_remove(arg)
+            except Exception as e:
+                raise e
 
     @commands.command()
     async def quote(self, ctx):
@@ -122,7 +134,10 @@ class Quotes(commands.Cog):
                 ctx = await self.show_quote(ctx, quote)
             elif message_content.isnumeric():
                 quote = await self.get_quote(nr=message_content)
-                ctx = await self.show_quote(ctx, quote)
+                if quote is None:
+                    return
+                else:
+                    ctx = await self.show_quote(ctx, quote)
             elif message_content.startswith('add '):
                 message_content = message_content.replace('add ', '', 1)
                 if re.match(r"(.+[\s][-][\s].+)", message_content):     # (.+[\s][-][\s].+) for checking String - String
@@ -164,8 +179,11 @@ class Quotes(commands.Cog):
             nr = random.randint(1, n_of_quotes)
         statement = '''SELECT ROWID, * FROM Quotes WHERE ROWID=?'''
         args = (nr,)
-        quote = self.db.execute_statement(statement, args)[1][0]
-        return quote
+        quote = self.db.execute_statement(statement, args)
+        if len(quote[1]) == 0:
+            return None
+        else:
+            return quote[1][0]
 
     async def add_quote_to_db(self, about_id, about_name, message_author, quote):
         curr_date = timezone('UTC').localize(datetime.utcnow()).strftime('%Y-%m-%d %H:%M')
@@ -215,6 +233,11 @@ class Quotes(commands.Cog):
         embed = await self.generate_quote_embed(quote, quote[7])
         await ctx.send(embed=embed)
         return ctx
+
+    async def db_remove(self, nr):
+        statement = '''DELETE FROM Quotes WHERE rowid = ?'''
+        args = (nr,)
+        quote = self.db.execute_statement(statement, args)[1][0]
 
 
 async def channel_set(ctx, config, channel, reassign):
