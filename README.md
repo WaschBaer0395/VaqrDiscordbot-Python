@@ -1,6 +1,7 @@
 # Vaqrgaming Discord Bot
 
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/40d1da68d7ab49cda6815a6ea52733e4)](https://www.codacy.com?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=WaschBaer0395/VaqrDiscordbot-Python&amp;utm_campaign=Badge_Grade)
+[![ISC License](https://img.shields.io/badge/license-ISC-green)](https://github.com/WaschBaer0395/VaqrDiscordBot-Python/blob/master/LICENSE) 
 
 **Vaqrgaming Discord Bot** is a Discord bot coded in Python using the [Discord.py](https://discordpy.readthedocs.io/en/stable/) library.
 
