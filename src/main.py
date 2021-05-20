@@ -52,7 +52,7 @@ def init_config():
     print('initializing config')
     config = configparser.ConfigParser()
     try:
-        config.read('settings.ini')
+        config.read('bot.ini')
         if config.has_section('BOT'):
             global TOKEN
             global PREFIX
@@ -63,7 +63,10 @@ def init_config():
                   'Name: ' + config.get('BOT', 'Name') + '\n'
                   'Prefix: ' + config.get('BOT', 'Prefix') + '\n'
                   'Token:' + config.get('BOT', 'Token') + '\n')
+            return True
         else:
+            file = open('bot.ini', 'a+')
+            config.read('bot.ini')
             print('writing default config')
             config['BOT'] = \
                 {
@@ -74,6 +77,7 @@ def init_config():
             try:
                 with open('settings.ini', 'a+') as configfile:
                     config.write(configfile)
+                return False
             except Exception as e:
                 print('```error writing config```')
     except OSError as e:
@@ -81,13 +85,15 @@ def init_config():
 
 
 def init_bot():
-    init_config()
-    print('Bot is connecting')
-    try:
-        bot.run(TOKEN)
-        print('Bot is connected')
-    except AttributeError as pb:
-        print('no valid token entered, please try again')
+    if init_config():
+        print('Bot is connecting')
+        try:
+            bot.run(TOKEN)
+            print('Bot is connected')
+        except AttributeError as pb:
+            print('no valid token entered, please try again')
+    else:
+        print('first start detected, please add a token, name and prefix to the bot.ini')
 
 
 def load_extension(cog, __path='cogs.'):
