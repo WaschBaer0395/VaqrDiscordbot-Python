@@ -46,7 +46,7 @@ class Birthday(commands.Cog):
     async def bset(self, ctx, *, args=None):
         """<birthday> Setup your Birthday by entering the date."""
         day, month, err = get_date_month(args)
-        config, self.settings = check_config('BIRTHDAY', self.settings)
+        _, self.settings = check_config('BIRTHDAY', self.settings)
         if err:
             await ctx.send(embed=discord.Embed(description='Unrecognized date format. \n'
                                                            'The following formats are accepted, as examples: \n'
@@ -104,7 +104,7 @@ class Birthday(commands.Cog):
     async def brole(self, ctx, role: commands.Greedy[discord.Role]):
         """<@Role> Setup your Birthdayrole."""
 
-        if len(role) == 0 or len(role) > 1 or type(role[0]) != discord.Role:
+        if len(role) == 0 or len(role) > 1 or not isinstance(role[0], discord.Role):
             await ctx.send(embed=discord.Embed(description="Syntax is `bset <@role>`\n"
                                                            "the role entered is either not a role\n"
                                                            " or you entered more than 2 Roles",
@@ -233,7 +233,7 @@ class Birthday(commands.Cog):
 
     def del_obs_members(self):
         statement = '''SELECT UserID FROM Birthday'''
-        ret, data = SqlLite('Birthdays').execute_statement(statement)
+        _, data = SqlLite('Birthdays').execute_statement(statement)
         member_ids = []
         bday_ids = []
         for d in data:
@@ -249,7 +249,7 @@ class Birthday(commands.Cog):
     def find_birthday(self, curr_date):
         statement = '''SELECT UserID FROM Birthday WHERE Day=? AND month=?'''
         args = (curr_date.day, curr_date.month)
-        ret, data = SqlLite('Birthdays').execute_statement(statement, args)
+        _, data = SqlLite('Birthdays').execute_statement(statement, args)
 
         temp = []
         birthday_kids = []
@@ -303,7 +303,7 @@ class Birthday(commands.Cog):
 
 
 def add_birthday(user, md, m, d):
-    statement = ''' INSERT INTO Birthday 
+    statement = '''INSERT INTO Birthday 
                     (UserID,UserName,Discriminator,Nickname,MonthDayDisp,Month,Day,Timezone,Birthday)
                     VALUES(?,?,?,?,?,?,?,'',0)'''
 
@@ -330,7 +330,7 @@ def del_birthday(userid):
 def update_birthday(user, md, m, d):
     statement = ''' UPDATE Birthday SET MonthDayDisp=?,Month=?,Day=? WHERE UserID=?'''
     args = (md, m, d, user.id,)
-    ret, err = SqlLite('Birthdays').execute_statement(statement, args)
+    ret, _ = SqlLite('Birthdays').execute_statement(statement, args)
     return ret
 
 

@@ -73,7 +73,7 @@ class Config(commands.Cog):
             config['welc'] = str(msg.content).replace('"', '\"')
             await self.bot.db.config.update({'_id': str(ctx.guild.id)}, {'$set': config})
             await ctx.send('Your welcome message has been successfully set.')
-   
+
     # ------------Welcome and leave----------------
 
     async def on_member_join(self, m):

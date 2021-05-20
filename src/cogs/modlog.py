@@ -53,7 +53,6 @@ class ModLog(commands.Cog):
 
         embed = discord.Embed(title="Member Joined", colour=discord.Colour(0xd03b9))
 
-        image: member.avatar_url
         embed.set_thumbnail(url=member.avatar)
         embed.set_footer(text=f"User ID: {member.id} | Joined at:")
 
