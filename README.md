@@ -38,7 +38,7 @@ If you are new to making bots you can check the [discord.py getting started](htt
 
 ## Changelog
 
-All notable changes for each version of this project are documented in the [changelog](https://github.com/WaschBaer0395/VaqrGamingDiscordbot-Python/blob/master/CHANGELOG.md).
+All notable changes for each version of this project are documented in the [changelog](https://github.com/WaschBaer0395/VaqrDiscordbot-Python/blob/master/CHANGELOG.md).
 
 ## Credits & Acknowledgments
 
