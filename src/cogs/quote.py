@@ -59,12 +59,12 @@ class Quotes(commands.Cog):
     async def setup_quotes(self, ctx, channel: commands.Greedy[discord.TextChannel]):
         """Admin Only!!, setup Quotes channel"""
         if len(channel) > 1:
-            await ctx.send(embed=discord.Embed(description=f"Quotes can only be saved in 1 channel. Please try again.",
+            await ctx.send(embed=discord.Embed(description="Quotes can only be saved in 1 channel. Please try again.",
                                                colour=discord.Colour(0xbf212f)))
 
             return
         elif len(channel) <= 0:
-            await ctx.send(embed=discord.Embed(description=f"Please enter a channel",
+            await ctx.send(embed=discord.Embed(description="Please enter a channel",
                                                colour=discord.Colour(0xbf212f)))
 
             return
@@ -154,19 +154,19 @@ class Quotes(commands.Cog):
                 else:
                     await ctx.send(
                         embed=discord.Embed(
-                            description=f"The Quote you entered, has the wrong format Please try again.\n"
-                                        f"the needed format is \n"
-                                        f"`v!quote add \"Quote\" - Name` or\n"
-                                        f"`v!quote add \"Quote\" - @person`",
+                            description="The Quote you entered, has the wrong format Please try again.\n"
+                                        "the needed format is \n"
+                                        "`v!quote add \"Quote\" - Name` or\n"
+                                        "`v!quote add \"Quote\" - @person`",
                             colour=discord.Colour(0xbf212f)))
             else:
                 await ctx.send(
                     embed=discord.Embed(
-                        description=f"Wrong Syntax\n"
-                                    f"You can use the following commands \n"
-                                    f"`v!quote random` or `v!quote` to get a random quote\n"
-                                    f"`v!quote <nr>` to get a specific quote\n"
-                                    f"`v!quote add <quote> - <name or @person>` to add a quote",
+                        description="Wrong Syntax\n"
+                                    "You can use the following commands \n"
+                                    "`v!quote random` or `v!quote` to get a random quote\n"
+                                    "`v!quote <nr>` to get a specific quote\n"
+                                    "`v!quote add <quote> - <name or @person>` to add a quote",
                         colour=discord.Colour(0xbf212f)))
         except Exception as e:
             await ctx.send(
@@ -254,7 +254,7 @@ async def channel_set(ctx, config, channel, reassign):
     if response is True:
         config = configset(config, channel[0])
     else:
-        embed = discord.Embed(description=f"The Quotes channel was not set",
+        embed = discord.Embed(description="The Quotes channel was not set",
                               colour=discord.Colour(0xbf212f))
         await embedctx.edit(embed=embed)
         return embedctx, config

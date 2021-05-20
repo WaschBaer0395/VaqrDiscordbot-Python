@@ -149,7 +149,8 @@ class Music(commands.Cog):
 
         state.volume = float(volume) / 100.0
         client.source.volume = state.volume  # update the AudioSource's volume to match
-        embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1), description=f"Music volume set to {state.volume}%")
+        embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1),
+                              description=f"Music volume set to {state.volume}%")
         await ctx.send(embed=embed)
 
     @commands.command()
@@ -194,7 +195,7 @@ class Music(commands.Cog):
         if (float(len(state.skip_votes)) /
                 users_in_channel) >= config.get('MUSIC', 'vote_skip_ratio'):
             # enough members have voted to skip, so skip the song
-            print(f"Enough votes, skipping...")
+            print("Enough votes, skipping...")
             channel.guild.voice_client.stop()
 
     def _play_song(self, client, state, song):
