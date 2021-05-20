@@ -2,7 +2,6 @@ import asyncio
 import re
 import discord
 
-
 from discord.ext import commands, tasks
 from ext.SQLlite import SqlLite
 from ext.config import *
@@ -29,22 +28,22 @@ class Birthday(commands.Cog):
 
     def init_config(self):
         settings = {
-                'channelSet': 'False',
-                'Init-ChannelName': 'None',
-                'Init-ChannelID': 'None',
-                'Announcetime': '8:00am',
-                'Announcetimezone': 'US/Pacific',
-                'Announce-ChannelID': 'None',
-                'Announce-ChannelName': 'None',
-                'BirthdayRole': 'None',
-                'SingularMessage': 'Has their Birthday today, wish them a happy birthday!',
-                'PluralMessage': 'Have their Birthday today, wish them a happy birthday!'
+            'channelSet': 'False',
+            'Init-ChannelName': 'None',
+            'Init-ChannelID': 'None',
+            'Announcetime': '8:00am',
+            'Announcetimezone': 'US/Pacific',
+            'Announce-ChannelID': 'None',
+            'Announce-ChannelName': 'None',
+            'BirthdayRole': 'None',
+            'SingularMessage': 'Has their Birthday today, wish them a happy birthday!',
+            'PluralMessage': 'Have their Birthday today, wish them a happy birthday!'
         }
         self.conf, self.settings = check_config('BIRTHDAY', settings)
 
     @commands.command()
     async def bset(self, ctx, *, args=None):
-        '''<birthday> Setup your Birthday by entering the date'''
+        """<birthday> Setup your Birthday by entering the date"""
         day, month, err = get_date_month(args)
         config, self.settings = check_config('BIRTHDAY', self.settings)
         if err:
@@ -57,7 +56,8 @@ class Birthday(commands.Cog):
         else:
             monthday = find_month(month)[0][:3] + '-' + day
             add_birthday(ctx.author, monthday, find_month(month)[1], day)
-            await ctx.send(embed=discord.Embed(description=f"Your Birthday was set for: `{day}-{find_month(month)[0]}`\n"
+            await ctx.send(embed=discord.Embed(description=f"Your Birthday was set for: `"
+                                                           f"{day}-{find_month(month)[0]}`\n"
                                                            f"Birthdays will always be announced at"
                                                            f" {self.conf.get('BIRTHDAY', 'Announcetime')}"
                                                            f" {self.conf.get('BIRTHDAY', 'Announcetimezone')}",
@@ -65,7 +65,7 @@ class Birthday(commands.Cog):
 
     @commands.command()
     async def btime(self, ctx, *, arg=''):
-        '''<Time> Setup the Announce Time'''
+        """<Time> Setup the Announce Time"""
         in_time = ''
         try:
             in_time = datetime.strptime(arg, "%I:%M %p")
@@ -86,7 +86,7 @@ class Birthday(commands.Cog):
                                         f"`8:00am`, `8:00 am`, `08:00 am`, `08:00am`",
                             colour=discord.Colour(0x37b326)))
                         return
-        if int(in_time.minute%10) == 0:
+        if int(in_time.minute % 10) == 0:
             conv_time = in_time.strftime('%I:%M%p')
             self.conf.set('BIRTHDAY', 'AnnounceTime', conv_time)
             save_config(self.conf)
@@ -102,7 +102,7 @@ class Birthday(commands.Cog):
 
     @commands.command()
     async def brole(self, ctx, role: commands.Greedy[discord.Role]):
-        '''<@Role> Setup your Birthdayrole'''
+        """<@Role> Setup your Birthdayrole"""
 
         if len(role) == 0 or len(role) > 1 or type(role[0]) != discord.Role:
             await ctx.send(embed=discord.Embed(description=f"Syntax is `bset <@role>`\n"
@@ -118,7 +118,7 @@ class Birthday(commands.Cog):
     @commands.command()
     @commands.has_permissions(manage_guild=True)
     async def bforcedel(self, ctx, member: commands.Greedy[discord.Member]):
-        '''<user> Force Delete a birthday'''
+        """<user> Force Delete a birthday"""
         del_birthday(member[0].id)
         await ctx.send(embed=discord.Embed(description=f"Birthday for : <@{member[0].id}>, was deleted",
                                            colour=discord.Colour(0x00FF97)))
@@ -126,7 +126,7 @@ class Birthday(commands.Cog):
 
     @commands.command()
     async def bdel(self, ctx):
-        '''Delete your birthday from the DB'''
+        """Delete your birthday from the DB"""
         del_birthday(ctx.author.id)
         await ctx.send(embed=discord.Embed(description=f"Your Birthday was deleted",
                                            colour=discord.Colour(0x00FF97)))
@@ -135,7 +135,7 @@ class Birthday(commands.Cog):
     @commands.command(no_pm=True)
     @commands.has_permissions(manage_guild=True)
     async def binit(self, ctx, channel: commands.Greedy[discord.TextChannel]):
-        '''<commandChannel> <announceChannel> Setup Birthday Channel'''
+        """<commandChannel> <announceChannel> Setup Birthday Channel"""
         if len(channel) != 2:
             await ctx.send(embed=discord.Embed(description=f"Syntax is `bset <birthdaychannel> <Accouncementchannel>`\n"
                                                            f"you have either selected only 1, or more than 2 channels",
@@ -211,24 +211,25 @@ class Birthday(commands.Cog):
         number_kids = len(birthday_kids)
         for b in birthday_kids:
             names = names + '<@{}>'.format(b.id)
-            if count != number_kids-1:
+            if count != number_kids - 1:
                 names = names + ' , '
-            if count == number_kids-1:
+            if count == number_kids - 1:
                 names = names + ' and '
             count = count + 1
 
         channel = discord.utils.get(self.bot.guilds[0].channels, id=int(
-                                    self.conf.get('BIRTHDAY', 'Announce-ChannelID')))
+            self.conf.get('BIRTHDAY', 'Announce-ChannelID')))
         if len(birthday_kids) > 1:
             await channel.send('@here')
             await channel.send(embed=discord.Embed(description=f"{names} {self.conf.get('BIRTHDAY', 'PluralMessage')}",
                                                    colour=discord.Colour(0x00FF97)))
-            #await channel.send(names + self.conf.get('BIRTHDAY', 'PluralMessage') + ' @here')
+            # await channel.send(names + self.conf.get('BIRTHDAY', 'PluralMessage') + ' @here')
         else:
             await channel.send('@here')
-            await channel.send(embed=discord.Embed(description=f"{names} {self.conf.get('BIRTHDAY', 'SingularMessage')}",
-                                                   colour=discord.Colour(0x00FF97)))
-            #await channel.send(names + self.conf.get('BIRTHDAY', 'SingularMessage') + ' @here')
+            await channel.send(
+                embed=discord.Embed(description=f"{names} {self.conf.get('BIRTHDAY', 'SingularMessage')}",
+                                    colour=discord.Colour(0x00FF97)))
+            # await channel.send(names + self.conf.get('BIRTHDAY', 'SingularMessage') + ' @here')
 
     def del_obs_members(self):
         statement = '''SELECT UserID FROM Birthday'''
@@ -298,7 +299,7 @@ class Birthday(commands.Cog):
         if len(data) != 0:
             await self.remove_birthday_role(data)
             statement = '''UPDATE BIRTHDAY SET birthday=0 WHERE Birthday=1'''
-            ret, err = SqlLite('Birthdays').execute_statement(statement)
+            SqlLite('Birthdays').execute_statement(statement)
 
 
 def add_birthday(user, md, m, d):
@@ -400,5 +401,5 @@ def init_db():
     SqlLite('Birthdays').create_table(statement)
 
 
-def setup(bot):
-    bot.add_cog(Birthday(bot))
+def setup(_bot):
+    _bot.add_cog(Birthday(_bot))

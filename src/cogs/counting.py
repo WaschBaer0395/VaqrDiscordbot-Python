@@ -1,7 +1,6 @@
 import math
 
 import discord
-import configparser
 from discord.ext import commands
 from distutils.util import strtobool
 from ext.SQLlite import SqlLite
@@ -23,16 +22,16 @@ class WrongCount(Exception):
 
 class Counting(commands.Cog):
 
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self, _bot):
+        self.bot = _bot
         self.db = SqlLite('Counting')
         self.init_db()
         self.settings = {
-                'channelSet': 'False',
-                'Name': 'None',
-                'ID': 'None',
-                'currentCount': '0',
-            }
+            'channelSet': 'False',
+            'Name': 'None',
+            'ID': 'None',
+            'currentCount': '0',
+        }
 
     def init_db(self):
         statement = ' \
@@ -51,7 +50,7 @@ class Counting(commands.Cog):
     @commands.command(aliases=['setcounting', 'setcount', 'setupcounting', 'countingchannel', 'sc'], no_pm=True)
     @commands.has_permissions(manage_guild=True)
     async def set_counting(self, ctx, channel: commands.Greedy[discord.TextChannel]):
-        '''Admin Only!!, setup counting channel'''
+        """Admin Only!!, setup counting channel"""
         if len(channel) > 1:
             await ctx.send(embed=discord.Embed(
                 description=f"Counting can only be applied in 1 channel. Please try again.",
@@ -64,7 +63,6 @@ class Counting(commands.Cog):
 
             return
         else:
-            embedctx = None
             config, self.settings = check_config('COUNTING', self.settings)
             try:
                 if bool(strtobool(config.get('COUNTING', 'channelSet'))):
@@ -73,9 +71,7 @@ class Counting(commands.Cog):
                     embedctx, config = await channel_set(ctx, config, channel, reassign=False)
                 save_config(config)
             except Exception as e:
-                #await ctx.send('```' + str(e) + '```')
                 raise e
-                #return
 
             embed = discord.Embed(description=f"The counting channel was set to <#{channel[0].id}>"
                                               f" with an id of {channel[0].id}", colour=discord.Colour(0x37b326))
@@ -135,9 +131,11 @@ class Counting(commands.Cog):
                         if not self.check_id(message.author.id):
                             self.reg_user(message.author)
                         else:
-                            newlvl, lvlup,  = self.add_count(message.author.id, xp_bonus)
+                            newlvl, lvlup, = self.add_count(message.author.id, xp_bonus)
                             if lvlup:
-                                await channel.send('<@' + str(message.author.id) + '> Congrats to the Lvl up, you reached LVL: ' + str(newlvl) + ' in counting')
+                                await channel.send('<@' + str(message.author.id) +
+                                                   '> Congrats to the Lvl up, you reached LVL: ' +
+                                                   str(newlvl) + ' in counting')
                     else:
                         raise WrongCount
                 else:
@@ -156,7 +154,10 @@ class Counting(commands.Cog):
         args = (ctx.author.id,)
         ret = self.db.execute_statement(statement, args)[1][0]
 
-        description = f"<@{ret[0]}> `Lvl: {ret[4]}` ,   Counts: `{ret[2]}` ,   Misscounts: `{ret[3]}` ,   XP: `{ret[5]} / {calc_exp(int(ret[4]) + 1)}`"
+        description = f"<@{ret[0]}> `Lvl: {ret[4]}` ,   " \
+                      f"Counts: `{ret[2]}` ,   " \
+                      f"Misscounts: `{ret[3]}` ,   " \
+                      f"XP: `{ret[5]} / {calc_exp(int(ret[4]) + 1)}`"
 
         embed = discord.Embed(
             title='Rank for: ' + ret[1],
@@ -184,14 +185,13 @@ class Counting(commands.Cog):
         ret = self.db.execute_statement(statement, args)[1][0]
         count = ret[4]
         curr_exp = ret[6]
-        curr_level = ret[7]
         statement = '''UPDATE Counting SET Counts=? WHERE UserID=?'''
         args = (str(count + 1), str(authorid),)
         self.db.execute_statement(statement, args)
         return self.add_xp(curr_exp, authorid, xp_bonus)
 
     def add_xp(self, curr_exp, authorid, xp_bonus):
-        newexp = curr_exp + 10*xp_bonus
+        newexp = curr_exp + 10 * xp_bonus
         oldlevel = calc_lvl(curr_exp)
         newlevel = calc_lvl(newexp)
         statement = '''UPDATE Counting Set Experience=?, Level=? WHERE UserID=?'''
@@ -226,7 +226,7 @@ class Counting(commands.Cog):
         description = ''
         c = 1
         for r in ret:
-            n_lvl_xp = calc_exp(r[4]+1)
+            n_lvl_xp = calc_exp(r[4] + 1)
             description = description + f"`#{c}` `lvl {str(r[4])}` <@{str(r[0])}> " \
                                         f"- `{str(r[2])}` counts " \
                                         f"- `{str(r[3])}` miscounts " \
@@ -242,13 +242,13 @@ class Counting(commands.Cog):
 
 async def channel_set(ctx, config, channel, reassign):
     if reassign:
-        embed = discord.Embed(title="Channel Confirm", colour=discord.Colour(0x269a78)
-                              , description="Are you sure you want to restart counting in a new channel?")
+        embed = discord.Embed(title="Channel Confirm", colour=discord.Colour(0x269a78),
+                              description="Are you sure you want to restart counting in a new channel?")
         c_session = ConfirmerSession(ctx, page=embed)
         response, embedctx = await c_session.run()
     else:
-        embed = discord.Embed(title="Setting New Channel", colour=discord.Colour(0x269a78)
-                              , description="Setting channel")
+        embed = discord.Embed(title="Setting New Channel", colour=discord.Colour(0x269a78),
+                              description="Setting channel")
         embedctx = await ctx.send(embed=embed)
         response = True
     if response is True:
@@ -270,11 +270,11 @@ def configset(config, channel):
 
 
 def calc_lvl(curr_exp):
-    ''''
+    """'
     calculates the resulting level, from given exp points
     :param curr_exp: current experience
     :return: resulting level truncated eg. 4.6 = 4
-    '''
+    """
     lvl = math.trunc(math.floor(25 + math.sqrt(625 + 100 * curr_exp)) / 50)
     return int(lvl)
 
@@ -284,5 +284,5 @@ def calc_exp(curr_level):
     return int(exp)
 
 
-def setup(bot):
-    bot.add_cog(Counting(bot))
+def setup(_bot):
+    bot.add_cog(Counting(_bot))
