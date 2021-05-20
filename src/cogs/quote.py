@@ -225,7 +225,7 @@ class Quotes(commands.Cog):
         if color is None:
             color = quote[7]
         embed = discord.Embed(description=f"{quote[1]} - {user}\n", colour=discord.Colour(int(color, 16)))
-        embed.set_author(name=f"#{quote[0]} by {message_author}", icon_url=message_author.avatar.url)
+        embed.set_author(name=f"#{quote[0]} by {message_author}", icon_url=message_author.avatar_url)
         embed.timestamp = datetime.strptime(quote[5], '%Y-%m-%d %H:%M')
         return embed
 
@@ -237,7 +237,7 @@ class Quotes(commands.Cog):
     async def db_remove(self, nr):
         statement = '''DELETE FROM Quotes WHERE rowid = ?'''
         args = (nr,)
-        quote = self.db.execute_statement(statement, args)[1][0]
+        self.db.execute_statement(statement, args)
 
 
 async def channel_set(ctx, config, channel, reassign):
