@@ -15,6 +15,7 @@ bot = commands.Bot('')
 class Birthday(commands.Cog):
 
     def __init__(self, _bot):
+        """Init for Birthday cog."""
         self.bot = _bot
         self.conf = None
         self.settings = None
@@ -47,10 +48,10 @@ class Birthday(commands.Cog):
         day, month, err = get_date_month(args)
         config, self.settings = check_config('BIRTHDAY', self.settings)
         if err:
-            await ctx.send(embed=discord.Embed(description=f'Unrecognized date format. \n'
-                                                           f'The following formats are accepted, as examples: \n'
-                                                           f'`15-jan`, `jan-15`, `15 jan`,\n'
-                                                           f'`jan 15`, `15 January`, `January 15`',
+            await ctx.send(embed=discord.Embed(description='Unrecognized date format. \n'
+                                                           'The following formats are accepted, as examples: \n'
+                                                           '`15-jan`, `jan-15`, `15 jan`,\n'
+                                                           '`jan 15`, `15 January`, `January 15`',
                                                colour=discord.Colour(0x37b326)))
             return
         else:
@@ -79,10 +80,10 @@ class Birthday(commands.Cog):
                         in_time = datetime.strptime(arg, "%I%p")
                     except ValueError:
                         await ctx.send(embed=discord.Embed(
-                            description=f"Error Setting time\n"
-                                        f"Enter a correct time with either of those formats:\n"
-                                        f"example `8am`, `8 am`, `08am`, `08 am`, "
-                                        f"`8:00am`, `8:00 am`, `08:00 am`, `08:00am`",
+                            description="Error Setting time\n"
+                                        "Enter a correct time with either of those formats:\n"
+                                        "example `8am`, `8 am`, `08am`, `08 am`, "
+                                        "`8:00am`, `8:00 am`, `08:00 am`, `08:00am`",
                             colour=discord.Colour(0x37b326)))
                         return
         if int(in_time.minute % 10) == 0:
@@ -94,8 +95,8 @@ class Birthday(commands.Cog):
                 colour=discord.Colour(0x00FF97)))
         else:
             await ctx.send(embed=discord.Embed(
-                description=f"Time can only be entered with Minutes being a multiple of 10 !`\n"
-                            f"e.g: 10 20 30 40 50 0",
+                description="Time can only be entered with Minutes being a multiple of 10 !`\n"
+                            "e.g: 10 20 30 40 50 0",
                 colour=discord.Colour(0x37b326)))
             return
 
@@ -104,9 +105,9 @@ class Birthday(commands.Cog):
         """<@Role> Setup your Birthdayrole."""
 
         if len(role) == 0 or len(role) > 1 or type(role[0]) != discord.Role:
-            await ctx.send(embed=discord.Embed(description=f"Syntax is `bset <@role>`\n"
-                                                           f"the role entered is either not a role\n"
-                                                           f" or you entered more than 2 Roles",
+            await ctx.send(embed=discord.Embed(description="Syntax is `bset <@role>`\n"
+                                                           "the role entered is either not a role\n"
+                                                           " or you entered more than 2 Roles",
                                                colour=discord.Colour(0x37b326)))
         else:
             self.conf.set('BIRTHDAY', 'BirthdayRole', str(role[0].id))
@@ -127,7 +128,7 @@ class Birthday(commands.Cog):
     async def bdel(self, ctx):
         """Delete your birthday from the DB."""
         del_birthday(ctx.author.id)
-        await ctx.send(embed=discord.Embed(description=f"Your Birthday was deleted",
+        await ctx.send(embed=discord.Embed(description="Your Birthday was deleted",
                                            colour=discord.Colour(0x00FF97)))
         return
 
@@ -136,8 +137,8 @@ class Birthday(commands.Cog):
     async def binit(self, ctx, channel: commands.Greedy[discord.TextChannel]):
         """<commandChannel> <announceChannel> Setup Birthday Channel."""
         if len(channel) != 2:
-            await ctx.send(embed=discord.Embed(description=f"Syntax is `bset <birthdaychannel> <Accouncementchannel>`\n"
-                                                           f"you have either selected only 1, or more than 2 channels",
+            await ctx.send(embed=discord.Embed(description="Syntax is `bset <birthdaychannel> <Accouncementchannel>`\n"
+                                                           "you have either selected only 1, or more than 2 channels",
                                                colour=discord.Colour(0x37b326)))
             return
         else:
