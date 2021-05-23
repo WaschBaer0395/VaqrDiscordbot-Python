@@ -10,3 +10,4 @@ python-dateutil
 nest-asyncio
 youtube_dl
 pytz~=2021.1
+mysql-connector-python
