@@ -4,7 +4,7 @@ import asyncio
 import youtube_dl as ytdl
 import logging
 import math
-
+import validators
 
 from discord.ext import commands
 from ext.paginator import PaginatorSession
@@ -351,7 +351,22 @@ class Music(commands.Cog):
         # client = ctx.guild.voice_client
         self.get_state(ctx.guild)  # get the guild's state
 
-        await _queue_audio(self, ctx, url, ctx.author)
+        await self._queue_audio(ctx, url, ctx.author)
+
+    async def play_audio(self, video, requested_by, state, ctx):
+        media = dict(
+            stream_url=video["formats"][0]["url"],
+            video_url=video["webpage_url"],
+            title=video["title"],
+            uploader=video["uploader"] if "uploader" in video else "",
+            thumbnail=video["thumbnail"] if "thumbnail" in video else None,
+            requested_by=requested_by
+        )
+
+        channel = ctx.author.voice.channel
+        client = await channel.connect()
+        self._play_song(client, state, media)
+        return media
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
@@ -362,6 +377,52 @@ class Music(commands.Cog):
                     client = member.guild.voice_client
                     if client is not None:
                         client.pause()
+
+    async def _queue_audio(self, ctx, url_or_search, requested_by):
+        """Plays audio from (or searches for) a URL."""
+        with ytdl.YoutubeDL(YTDL_OPTS) as ydl:
+
+            client = ctx.guild.voice_client
+            state = self.get_state(ctx.guild)  # get the guild's state
+
+            if not validators.url(url_or_search):
+                if 'lyrics' not in url_or_search and 'lyrics' not in url_or_search:
+                    url_or_search = url_or_search + ' lyrics'
+
+            request = ydl.extract_info(url_or_search, download=False)
+            if "_type" in request and request["_type"] == "playlist":
+                for index, song in enumerate(request['entries']):
+                    video = ydl.extract_info(song['url'], download=False)
+                    await self.check_playing(client, video, requested_by, state, ctx)
+
+                if len(request['entries']) > 1:
+                    embed = discord.Embed(title="Music Player",
+                                          colour=discord.Colour(0x1),
+                                          description=f"Playlist **{request['title']}** "
+                                                      f"by **{request['uploader']}** queued!")
+                    await ctx.send(embed=embed)
+            else:
+                await self.check_playing(client, request, requested_by, state, ctx)
+
+    async def check_playing(self, client, video, requested_by, state, ctx, info=None):
+        if client and client.channel:  # bot is not already in the channel playing music
+            # queue
+            media = add_to_playlist(video, requested_by, state)
+            if info is not None and len(info['entries']) == 1:
+                await ctx.send("Added to queue.", embed=get_embed(media))
+
+        else:  # immediaetly play song
+            if ctx.author.voice is not None and ctx.author.voice.channel is not None:
+                # play
+                media = await self.play_audio(video, requested_by, state, ctx)
+                if info is not None and len(info['entries']) == 1:
+                    await ctx.send("", embed=get_embed(media))
+
+            else:
+                await ctx.send(embed=discord.Embed(
+                    title="Music Player",
+                    colour=discord.Colour(0x1),
+                    description=f"You need to be in the vc with the bot"))
 
 
 def divide_chunks(_l, n):
@@ -389,64 +450,18 @@ def get_embed(video):
     return embed
 
 
-async def _queue_audio(self, ctx, url_or_search, requested_by):
-    """Plays audio from (or searches for) a URL."""
-    with ytdl.YoutubeDL(YTDL_OPTS) as ydl:
+def add_to_playlist(video, requested_by, state):
+    media = dict(
+        stream_url=video["formats"][0]["url"],
+        video_url=video["webpage_url"],
+        title=video["title"],
+        uploader=video["uploader"] if "uploader" in video else "",
+        thumbnail=video["thumbnail"] if "thumbnail" in video else None,
+        requested_by=requested_by
+    )
 
-        client = ctx.guild.voice_client
-        state = self.get_state(ctx.guild)  # get the guild's state
-
-        info = ydl.extract_info(url_or_search, download=False)
-        if "_type" in info and info["_type"] == "playlist":
-            for index, song in enumerate(info['entries']):
-                video = ydl.extract_info(song['url'], download=False)
-
-                if client and client.channel:
-                    # queue
-
-                    media = dict(
-                        stream_url=video["formats"][0]["url"],
-                        video_url=video["webpage_url"],
-                        title=video["title"],
-                        uploader=video["uploader"] if "uploader" in video else "",
-                        thumbnail=video["thumbnail"] if "thumbnail" in video else None,
-                        requested_by=requested_by
-                    )
-
-                    state.playlist.append(media)
-
-                    if len(info['entries']) == 1:
-                        await ctx.send("Added to queue.", embed=get_embed(media))
-
-                else:
-                    if ctx.author.voice is not None and ctx.author.voice.channel is not None:
-                        # play
-
-                        media = dict(
-                            stream_url=video["formats"][0]["url"],
-                            video_url=video["webpage_url"],
-                            title=video["title"],
-                            uploader=video["uploader"] if "uploader" in video else "",
-                            thumbnail=video["thumbnail"] if "thumbnail" in video else None,
-                            requested_by=requested_by
-                        )
-
-                        channel = ctx.author.voice.channel
-                        client = await channel.connect()
-                        self._play_song(client, state, media)
-
-                        if len(info['entries']) == 1:
-                            await ctx.send("", embed=get_embed(media))
-
-                    else:
-                        embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1),
-                                              description=f"You need to be in the vc with the bot")
-                        await ctx.send(embed=embed)
-
-            if len(info['entries']) > 1:
-                embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1),
-                                      description=f"Playlist **{info['title']}** by **{info['uploader']}** queued!")
-                await ctx.send(embed=embed)
+    state.playlist.append(media)
+    return media
 
 
 def check_config():
