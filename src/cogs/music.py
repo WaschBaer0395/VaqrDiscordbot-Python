@@ -234,7 +234,7 @@ class Music(commands.Cog):
                                    before_options='-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5'),
             volume=state.volume)
 
-        def after_playing():
+        def after_playing(err):
             if len(state.playlist) > 0:
                 next_song = state.playlist.pop(0)
                 self._play_song(client, state, next_song)
@@ -414,9 +414,11 @@ class Music(commands.Cog):
         else:  # immediaetly play song
             if ctx.author.voice is not None and ctx.author.voice.channel is not None:
                 # play
-                media = await self.play_audio(video, requested_by, state, ctx)
-                if info is not None and len(info['entries']) == 1:
-                    await ctx.send("", embed=get_embed(media))
+                try:
+                    media = await self.play_audio(video, requested_by, state, ctx)
+                    await ctx.send("Now Playing: ", embed=get_embed(media))
+                except Exception:
+                    raise
 
             else:
                 await ctx.send(embed=discord.Embed(
