@@ -4,7 +4,7 @@ import discord
 
 from distutils.util import strtobool
 from discord.ext import commands
-from ext.SQLlite import SqlLite
+from ext.db import DB
 from ext.config import check_config, save_config
 from ext.confirmer import ConfirmerSession
 from datetime import datetime
@@ -15,7 +15,7 @@ class Quotes(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
-        self.db = SqlLite('Quotes')
+        self.db = DB('Quotes')
         self.init_db()
         self.conf = None
         self.settings = {
@@ -40,13 +40,14 @@ class Quotes(commands.Cog):
 
     def init_db(self):
         statement = ''' CREATE TABLE IF NOT EXISTS Quotes( \
-                        Quote text NOT NULL,\
-                        AboutName text NOT NULL, \
-                        AboutID text DEFAULT ('0'), \
-                        ByUser text NOT NULL, \
-                        Date text NOT NULL,\
-                        MessageID text DEFAULT ('0'),\
-                        MessageColor text DEFAULT ('0xbf212f')\
+                        ID int NOT NULL AUTO_INCREMENT PRIMARY KEY,\
+                        Quote VARCHAR(255) NOT NULL,\
+                        AboutName VARCHAR(255) NOT NULL, \
+                        AboutID VARCHAR(255) DEFAULT '0', \
+                        ByUser VARCHAR(255) NOT NULL, \
+                        Date VARCHAR(255) NOT NULL,\
+                        MessageID VARCHAR(255) DEFAULT '0',\
+                        MessageColor VARCHAR(255) DEFAULT '0xbf212f'\
                         );'''
         self.db.create_table(statement)
 
@@ -169,24 +170,26 @@ class Quotes(commands.Cog):
 
     async def add_quote_to_db(self, about_id, about_name, message_author, quote):
         curr_date = timezone('UTC').localize(datetime.utcnow()).strftime('%Y-%m-%d %H:%M')
-        statement = '''INSERT INTO Quotes (Quote,AboutName,AboutID,ByUser,Date) VALUES(?,?,?,?,?)'''
+        statement = '''INSERT INTO Quotes (Quote,AboutName,AboutID,ByUser,Date) VALUES(%s,%s,%s,%s,%s)'''
         if not quote.startswith('\"'):
             quote = '\"' + quote
         if not quote.endswith('\"'):
             quote = quote + '\"'
-        args = (quote, about_name, about_id, message_author.id, curr_date, )
+        args = (quote, about_name, about_id, message_author.id, curr_date)
         self.db.execute_statement(statement, args)
-        statement = '''SELECT last_insert_rowid()'''
-        quote_id = self.db.execute_statement(statement)[1][0][0]
-        return quote_id
 
+        statement = '''SELECT LAST_INSERT_ID()'''
+        rowid = self.db.execute_statement(statement)[1][0][0]
+        return rowid
+
+    #[1][0][0]
     async def post_quote(self, quote_nr):
         # random_number = random.randint(0, 16777215)
         # hex_number = str(hex(random_number))
         # color = '0x' + hex_number[2:]
         c_index = (quote_nr-1) % 11
 
-        statement = '''SELECT ROWID, * FROM Quotes WHERE rowid = ?'''
+        statement = '''SELECT * FROM Quotes WHERE id = %s'''
         args = (quote_nr,)
         quote = self.db.execute_statement(statement, args)[1][0]
 
@@ -194,7 +197,7 @@ class Quotes(commands.Cog):
         quotes_channel = self.bot.get_channel(int(self.conf.get('QUOTES', 'ID')))
         await quotes_channel.send(embed=embed)
 
-        statement = '''UPDATE Quotes SET MessageID=?, MessageColor=? WHERE rowid = ?'''
+        statement = '''UPDATE Quotes SET MessageID=%s, MessageColor=%s WHERE id = %s'''
         args = (quotes_channel.last_message_id, str(self.pride[c_index]), quote[0],)
         self.db.execute_statement(statement, args)
 
@@ -207,7 +210,7 @@ class Quotes(commands.Cog):
         if color is None:
             color = quote[7]
         embed = discord.Embed(description=f"{quote[1]} - {user}\n", colour=discord.Colour(int(color, 16)))
-        embed.set_author(name=f"#{quote[0]} by {message_author}", icon_url=message_author.avatar.url)
+        embed.set_author(name=f"#{quote[0]} by {message_author}", icon_url=message_author.avatar_url)
         embed.timestamp = datetime.strptime(quote[5], '%Y-%m-%d %H:%M')
         return embed
 
