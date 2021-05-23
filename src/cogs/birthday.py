@@ -247,7 +247,7 @@ class Birthday(commands.Cog):
                 del_birthday(d)
 
     def find_birthday(self, curr_date):
-        statement = '''SELECT UserID FROM Birthday WHERE Day=? AND month=?'''
+        statement = '''SELECT UserID FROM Birthday WHERE Day=%s AND month=%s'''
         args = (curr_date.day, curr_date.month)
         _, data = DB('Birthdays').execute_statement(statement, args)
 
@@ -298,7 +298,7 @@ class Birthday(commands.Cog):
         ret, data = DB('Birthdays').execute_statement(statement)
         if len(data) != 0:
             await self.remove_birthday_role(data)
-            statement = '''UPDATE BIRTHDAY SET birthday=0 WHERE Birthday=1'''
+            statement = '''UPDATE Birthday SET birthday=0 WHERE Birthday=1'''
             DB('Birthdays').execute_statement(statement)
 
 
@@ -315,7 +315,7 @@ def add_birthday(user, md, m, d):
 
 
 def set_birthday_flag(_id):
-    statement = '''UPDATE BIRTHDAY SET Birthday=1 WHERE UserID=%s'''
+    statement = '''UPDATE Birthday SET Birthday=1 WHERE UserID=%s'''
     args = (_id,)
     DB('Birthdays').execute_statement(statement, args)
 

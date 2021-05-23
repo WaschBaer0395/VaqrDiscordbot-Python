@@ -178,7 +178,7 @@ class Quotes(commands.Cog):
         if nr == 'random':
             n_of_quotes = int(self.db.execute_statement('''SELECT COUNT(*) FROM Quotes''')[1][0][0])
             nr = random.randint(1, n_of_quotes)
-        statement = '''SELECT ROWID, * FROM Quotes WHERE ROWID=?'''
+        statement = '''SELECT * FROM Quotes WHERE ID=%s'''
         args = (nr,)
         quote = self.db.execute_statement(statement, args)
         if len(quote[1]) == 0:
@@ -238,7 +238,7 @@ class Quotes(commands.Cog):
         return ctx
 
     async def db_remove(self, nr):
-        statement = '''DELETE FROM Quotes WHERE rowid = ?'''
+        statement = '''DELETE FROM Quotes WHERE ID = %s'''
         args = (nr,)
         self.db.execute_statement(statement, args)
 
