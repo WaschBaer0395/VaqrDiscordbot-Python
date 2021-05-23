@@ -3,7 +3,7 @@ import re
 import discord
 
 from discord.ext import commands, tasks
-from ext.SQLlite import SqlLite
+from ext.db import DB
 from ext.config import *
 from ext.confirmer import ConfirmerSession
 from datetime import datetime
@@ -15,6 +15,7 @@ bot = commands.Bot('')
 class Birthday(commands.Cog):
 
     def __init__(self, _bot):
+        """Init for Birthday cog."""
         self.bot = _bot
         self.conf = None
         self.settings = None
@@ -43,14 +44,14 @@ class Birthday(commands.Cog):
 
     @commands.command()
     async def bset(self, ctx, *, args=None):
-        """<birthday> Setup your Birthday by entering the date"""
+        """<birthday> Setup your Birthday by entering the date."""
         day, month, err = get_date_month(args)
-        config, self.settings = check_config('BIRTHDAY', self.settings)
+        _, self.settings = check_config('BIRTHDAY', self.settings)
         if err:
-            await ctx.send(embed=discord.Embed(description=f'Unrecognized date format. \n'
-                                                           f'The following formats are accepted, as examples: \n'
-                                                           f'`15-jan`, `jan-15`, `15 jan`,\n'
-                                                           f'`jan 15`, `15 January`, `January 15`',
+            await ctx.send(embed=discord.Embed(description='Unrecognized date format. \n'
+                                                           'The following formats are accepted, as examples: \n'
+                                                           '`15-jan`, `jan-15`, `15 jan`,\n'
+                                                           '`jan 15`, `15 January`, `January 15`',
                                                colour=discord.Colour(0x37b326)))
             return
         else:
@@ -65,8 +66,7 @@ class Birthday(commands.Cog):
 
     @commands.command()
     async def btime(self, ctx, *, arg=''):
-        """<Time> Setup the Announce Time"""
-        in_time = ''
+        """<Time> Setup the Announce Time."""
         try:
             in_time = datetime.strptime(arg, "%I:%M %p")
         except ValueError:
@@ -80,10 +80,10 @@ class Birthday(commands.Cog):
                         in_time = datetime.strptime(arg, "%I%p")
                     except ValueError:
                         await ctx.send(embed=discord.Embed(
-                            description=f"Error Setting time\n"
-                                        f"Enter a correct time with either of those formats:\n"
-                                        f"example `8am`, `8 am`, `08am`, `08 am`, "
-                                        f"`8:00am`, `8:00 am`, `08:00 am`, `08:00am`",
+                            description="Error Setting time\n"
+                                        "Enter a correct time with either of those formats:\n"
+                                        "example `8am`, `8 am`, `08am`, `08 am`, "
+                                        "`8:00am`, `8:00 am`, `08:00 am`, `08:00am`",
                             colour=discord.Colour(0x37b326)))
                         return
         if int(in_time.minute % 10) == 0:
@@ -95,19 +95,19 @@ class Birthday(commands.Cog):
                 colour=discord.Colour(0x00FF97)))
         else:
             await ctx.send(embed=discord.Embed(
-                description=f"Time can only be entered with Minutes being a multiple of 10 !`\n"
-                            f"e.g: 10 20 30 40 50 0",
+                description="Time can only be entered with Minutes being a multiple of 10 !`\n"
+                            "e.g: 10 20 30 40 50 0",
                 colour=discord.Colour(0x37b326)))
             return
 
     @commands.command()
     async def brole(self, ctx, role: commands.Greedy[discord.Role]):
-        """<@Role> Setup your Birthdayrole"""
+        """<@Role> Setup your Birthdayrole."""
 
-        if len(role) == 0 or len(role) > 1 or type(role[0]) != discord.Role:
-            await ctx.send(embed=discord.Embed(description=f"Syntax is `bset <@role>`\n"
-                                                           f"the role entered is either not a role\n"
-                                                           f" or you entered more than 2 Roles",
+        if len(role) == 0 or len(role) > 1 or not isinstance(role[0], discord.Role):
+            await ctx.send(embed=discord.Embed(description="Syntax is `bset <@role>`\n"
+                                                           "the role entered is either not a role\n"
+                                                           " or you entered more than 2 Roles",
                                                colour=discord.Colour(0x37b326)))
         else:
             self.conf.set('BIRTHDAY', 'BirthdayRole', str(role[0].id))
@@ -118,7 +118,7 @@ class Birthday(commands.Cog):
     @commands.command()
     @commands.has_permissions(manage_guild=True)
     async def bforcedel(self, ctx, member: commands.Greedy[discord.Member]):
-        """<user> Force Delete a birthday"""
+        """<user> Force Delete a birthday."""
         del_birthday(member[0].id)
         await ctx.send(embed=discord.Embed(description=f"Birthday for : <@{member[0].id}>, was deleted",
                                            colour=discord.Colour(0x00FF97)))
@@ -126,19 +126,19 @@ class Birthday(commands.Cog):
 
     @commands.command()
     async def bdel(self, ctx):
-        """Delete your birthday from the DB"""
+        """Delete your birthday from the DB."""
         del_birthday(ctx.author.id)
-        await ctx.send(embed=discord.Embed(description=f"Your Birthday was deleted",
+        await ctx.send(embed=discord.Embed(description="Your Birthday was deleted",
                                            colour=discord.Colour(0x00FF97)))
         return
 
     @commands.command(no_pm=True)
     @commands.has_permissions(manage_guild=True)
     async def binit(self, ctx, channel: commands.Greedy[discord.TextChannel]):
-        """<commandChannel> <announceChannel> Setup Birthday Channel"""
+        """<commandChannel> <announceChannel> Setup Birthday Channel."""
         if len(channel) != 2:
-            await ctx.send(embed=discord.Embed(description=f"Syntax is `bset <birthdaychannel> <Accouncementchannel>`\n"
-                                                           f"you have either selected only 1, or more than 2 channels",
+            await ctx.send(embed=discord.Embed(description="Syntax is `bset <birthdaychannel> <Accouncementchannel>`\n"
+                                                           "you have either selected only 1, or more than 2 channels",
                                                colour=discord.Colour(0x37b326)))
             return
         else:
@@ -233,7 +233,7 @@ class Birthday(commands.Cog):
 
     def del_obs_members(self):
         statement = '''SELECT UserID FROM Birthday'''
-        ret, data = SqlLite('Birthdays').execute_statement(statement)
+        _, data = DB('Birthdays').execute_statement(statement)
         member_ids = []
         bday_ids = []
         for d in data:
@@ -249,7 +249,7 @@ class Birthday(commands.Cog):
     def find_birthday(self, curr_date):
         statement = '''SELECT UserID FROM Birthday WHERE Day=? AND month=?'''
         args = (curr_date.day, curr_date.month)
-        ret, data = SqlLite('Birthdays').execute_statement(statement, args)
+        _, data = DB('Birthdays').execute_statement(statement, args)
 
         temp = []
         birthday_kids = []
@@ -295,42 +295,42 @@ class Birthday(commands.Cog):
 
     async def remove_birthday_flag(self):
         statement = '''SELECT UserID FROM Birthday WHERE Birthday=1'''
-        ret, data = SqlLite('Birthdays').execute_statement(statement)
+        ret, data = DB('Birthdays').execute_statement(statement)
         if len(data) != 0:
             await self.remove_birthday_role(data)
             statement = '''UPDATE BIRTHDAY SET birthday=0 WHERE Birthday=1'''
-            SqlLite('Birthdays').execute_statement(statement)
+            DB('Birthdays').execute_statement(statement)
 
 
 def add_birthday(user, md, m, d):
-    statement = ''' INSERT INTO Birthday 
+    statement = '''INSERT INTO Birthday 
                     (UserID,UserName,Discriminator,Nickname,MonthDayDisp,Month,Day,Timezone,Birthday)
-                    VALUES(?,?,?,?,?,?,?,'',0)'''
+                    VALUES(%s,%s,%s,%s,%s,%s,%s,'','0')'''
 
     args = (str(user.id), user.name, user.discriminator, user.nick, md, str(m), str(d),)
-    ret, err = SqlLite('Birthdays').execute_statement(statement, args)
+    ret, err = DB('Birthdays').execute_statement(statement, args)
     if 'UNIQUE' in str(err):
         ret = update_birthday(user, md, m, d)
     return ret
 
 
 def set_birthday_flag(_id):
-    statement = '''UPDATE BIRTHDAY SET Birthday=1 WHERE UserID=?'''
+    statement = '''UPDATE BIRTHDAY SET Birthday=1 WHERE UserID=%s'''
     args = (_id,)
-    SqlLite('Birthdays').execute_statement(statement, args)
+    DB('Birthdays').execute_statement(statement, args)
 
 
 def del_birthday(userid):
-    statement = ''' DELETE FROM Birthday WHERE UserID=?'''
+    statement = ''' DELETE FROM Birthday WHERE UserID=%s'''
     args = (str(userid),)
-    ret, data = SqlLite('Birthdays').execute_statement(statement, args)
+    ret, data = DB('Birthdays').execute_statement(statement, args)
     return ret
 
 
 def update_birthday(user, md, m, d):
-    statement = ''' UPDATE Birthday SET MonthDayDisp=?,Month=?,Day=? WHERE UserID=?'''
+    statement = ''' UPDATE Birthday SET MonthDayDisp=%s,Month=%s,Day=%s WHERE UserID=%s'''
     args = (md, m, d, user.id,)
-    ret, err = SqlLite('Birthdays').execute_statement(statement, args)
+    ret, _ = DB('Birthdays').execute_statement(statement, args)
     return ret
 
 
@@ -389,16 +389,16 @@ def get_or_create_eventloop():
 def init_db():
     statement = ''' CREATE TABLE IF NOT EXISTS Birthday( \
                         UserID integer PRIMARY KEY, \
-                        UserName text NOT NULL, \
-                        Discriminator text NOT NULL, \
-                        Nickname text, \
-                        MonthDayDisp text, \
+                        UserName VARCHAR(255) NOT NULL, \
+                        Discriminator VARCHAR(255) NOT NULL, \
+                        Nickname VARCHAR(255), \
+                        MonthDayDisp VARCHAR(255), \
                         Month integer, \
                         Day integer, \
-                        Timezone text, \
+                        Timezone VARCHAR(255), \
                         Birthday integer 
                         );'''
-    SqlLite('Birthdays').create_table(statement)
+    DB('Birthdays').create_table(statement)
 
 
 def setup(_bot):

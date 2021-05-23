@@ -1,0 +1,11 @@
+{
+  "name": "VaqrDiscordbot-Python",
+  "version": "1.0.0",
+  "description": "Discordbot written in python",
+  "author": "WaschBaer0395",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/WaschBaer0395/VaqrDiscordbot-python.git"
+  }
+}

@@ -3,7 +3,7 @@ import math
 import discord
 from discord.ext import commands
 from distutils.util import strtobool
-from ext.SQLlite import SqlLite
+from ext.db import DB
 from ext.config import *
 
 from ext.confirmer import ConfirmerSession
@@ -24,7 +24,7 @@ class Counting(commands.Cog):
 
     def __init__(self, _bot):
         self.bot = _bot
-        self.db = SqlLite('Counting')
+        self.db = DB('Counting')
         self.init_db()
         self.settings = {
             'channelSet': 'False',
@@ -37,9 +37,9 @@ class Counting(commands.Cog):
         statement = ' \
                     CREATE TABLE IF NOT EXISTS COUNTING( \
                         UserID integer PRIMARY KEY, \
-                        UserName text NOT NULL, \
-                        Discriminator text NOT NULL, \
-                        Nickname text, \
+                        UserName VARCHAR(255) NOT NULL, \
+                        Discriminator VARCHAR(255) NOT NULL, \
+                        Nickname VARCHAR(255), \
                         Counts Integer, \
                         MissCounts integer, \
                         Experience integer, \
@@ -50,7 +50,7 @@ class Counting(commands.Cog):
     @commands.command(aliases=['setcounting', 'setcount', 'setupcounting', 'countingchannel', 'sc'], no_pm=True)
     @commands.has_permissions(manage_guild=True)
     async def set_counting(self, ctx, channel: commands.Greedy[discord.TextChannel]):
-        """Admin Only!!, setup counting channel"""
+        """Admin Only!!, setup counting channel."""
         if len(channel) > 1:
             await ctx.send(embed=discord.Embed(
                 description=f"Counting can only be applied in 1 channel. Please try again.",
@@ -83,17 +83,16 @@ class Counting(commands.Cog):
         if int(config.get('COUNTING', 'id')) != ctx.channel.id:
             if args == 'help' or None:
                 embed = discord.Embed(title="Counting usage",
-                                      description=f"\n"
-                                                  f"`v!c argument` \n"
-                                                  f"or\n"
-                                                  f"`v!count argument`\n"
-                                                  f"\n"
-                                                  f"**Arguments:** \n"
-                                                  f"\n"
-                                                  f"`list`\n`top10`\n`leaderboard` \n"
-                                                  f"for showing the leaderboard \n"
-                                                  f"\n"
-                                                  f"**Example:**  `v!c leaderboard`",
+                                      description="`v!c argument` \n"
+                                                  "or\n"
+                                                  "`v!count argument`\n"
+                                                  "\n"
+                                                  "**Arguments:** \n"
+                                                  "\n"
+                                                  "`list`\n`top10`\n`leaderboard` \n"
+                                                  "for showing the leaderboard \n"
+                                                  "\n"
+                                                  "**Example:**  `v!c leaderboard`",
                                       colour=discord.Colour(0x37b326))
                 await ctx.send(embed=embed)
             elif args == 'leaderboard' or args == 'top10' or args == 'list':
@@ -150,7 +149,7 @@ class Counting(commands.Cog):
     async def show_rank(self, ctx):
         statement = ''' SELECT UserID,UserName,Counts,MissCounts,Level,Experience
                         FROM Counting 
-                        WHERE UserID=?'''
+                        WHERE UserID=%s'''
         args = (ctx.author.id,)
         ret = self.db.execute_statement(statement, args)[1][0]
 
@@ -166,7 +165,7 @@ class Counting(commands.Cog):
         await ctx.send(embed=embed)
 
     def check_id(self, userid):
-        statement = '''SELECT EXISTS(SELECT 1 FROM Counting WHERE UserID=?)'''
+        statement = '''SELECT EXISTS(SELECT 1 FROM Counting WHERE UserID=%s)'''
         count = self.db.execute_statement(statement, (userid,))
         if count[1][0][0] >= 1:
             return True
@@ -175,17 +174,17 @@ class Counting(commands.Cog):
 
     def reg_user(self, author):
         statement = '''INSERT INTO Counting (UserID,UserName,Discriminator,Nickname,Counts,MissCounts,Experience,Level)
-                    VALUES(?,?,?,?,?,0,0,1)'''
+                    VALUES(%s,%s,%s,%s,%s,'0','0','1')'''
         args = (int(author.id), str(author.display_name), int(author.discriminator), str(author.nick), 1)
         self.db.execute_statement(statement, args)
 
     def add_count(self, authorid, xp_bonus):
-        statement = '''SELECT * FROM Counting WHERE UserID = ?'''
+        statement = '''SELECT * FROM Counting WHERE UserID = %s'''
         args = (str(authorid),)
         ret = self.db.execute_statement(statement, args)[1][0]
         count = ret[4]
         curr_exp = ret[6]
-        statement = '''UPDATE Counting SET Counts=? WHERE UserID=?'''
+        statement = '''UPDATE Counting SET Counts=%s WHERE UserID=%s'''
         args = (str(count + 1), str(authorid),)
         self.db.execute_statement(statement, args)
         return self.add_xp(curr_exp, authorid, xp_bonus)
@@ -194,7 +193,7 @@ class Counting(commands.Cog):
         newexp = curr_exp + 10 * xp_bonus
         oldlevel = calc_lvl(curr_exp)
         newlevel = calc_lvl(newexp)
-        statement = '''UPDATE Counting Set Experience=?, Level=? WHERE UserID=?'''
+        statement = '''UPDATE Counting Set Experience=%s, Level=%s WHERE UserID=%s'''
         args = (str(newexp), str(newlevel), str(authorid),)
         self.db.execute_statement(statement, args)
         if newlevel != oldlevel:
@@ -204,10 +203,10 @@ class Counting(commands.Cog):
     def wrong_count(self, authorid):
         if not self.check_id(authorid):
             return
-        statement = '''SELECT * FROM Counting WHERE UserID = ?'''
+        statement = '''SELECT * FROM Counting WHERE UserID = %s'''
         args = (str(authorid),)
         ret = self.db.execute_statement(statement, args)
-        statement = '''UPDATE Counting SET MissCounts=? WHERE UserID=?'''
+        statement = '''UPDATE Counting SET MissCounts=%s WHERE UserID=%s'''
         args = (str(ret[1][0][5] + 1), str(authorid))
         self.db.execute_statement(statement, args)
 
@@ -254,7 +253,7 @@ async def channel_set(ctx, config, channel, reassign):
     if response is True:
         config = configset(config, channel[0])
     else:
-        embed = discord.Embed(description=f"The counting channel was not set",
+        embed = discord.Embed(description="The counting channel was not set",
                               colour=discord.Colour(0xbf212f))
         await embedctx.edit(embed=embed)
         return embedctx, config

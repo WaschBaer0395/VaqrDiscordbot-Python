@@ -17,7 +17,7 @@ def developer():
 
 
 def paginate(text: str):
-    '''Simple generator that paginates text.'''
+    """Simple generator that paginates text."""
     last = 0
     pages = []
     for curr in range(0, len(text)):
@@ -31,7 +31,7 @@ def paginate(text: str):
 
 
 def cleanup_code(content):
-    '''Automatically removes code blocks from the code.'''
+    """Automatically removes code blocks from the code."""
     # remove ```py\n```
     if content.startswith('```') and content.endswith('```'):
         return '\n'.join(content.split('\n')[1:-1])
