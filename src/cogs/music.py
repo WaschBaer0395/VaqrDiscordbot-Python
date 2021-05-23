@@ -68,14 +68,14 @@ async def _queue_text(ctx, queue):
         queue_2d = list(divide_chunks(queue, 8))
 
         embed_pages = []
-
+        index = 1
         for pages in queue_2d:
             message = ''
             song_embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1))
-            for index, song in enumerate(pages):
+            for _, song in enumerate(pages):
                 message += f"  `{index + 1}.` **{song['title']}** " \
                            f"(requested by {song['requested_by'].mention})\n"  # add individual songs
-
+                index = index + 1
             song_embed.add_field(name='Song Queue', value=message)
             embed_pages.append(song_embed)
         # for index, song in enumerate(queue):
