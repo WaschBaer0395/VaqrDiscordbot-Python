@@ -1,3 +1,7 @@
+import concurrent.futures
+import re
+
+import requests
 import discord
 import configparser
 import asyncio
@@ -8,6 +12,8 @@ import validators
 
 from discord.ext import commands
 from ext.paginator import PaginatorSession
+
+playing = False
 
 
 async def audio_playing(ctx, respond=True):
@@ -58,38 +64,6 @@ async def is_audio_requester(ctx):
         return False
 
 
-async def _queue_text(ctx, queue):
-    """Returns a block of text describing a given song queue."""
-    if len(queue) > 0:
-
-        embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1), description="Retrieving  queue...")
-        retrieve_msg = await ctx.send(embed=embed)
-
-        queue_2d = list(divide_chunks(queue, 8))
-
-        embed_pages = []
-        index = 1
-        for pages in queue_2d:
-            message = ''
-            song_embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1))
-            for _, song in enumerate(pages):
-                message += f"  `{index + 1}.` **{song['title']}** " \
-                           f"(requested by {song['requested_by'].mention})\n"  # add individual songs
-                index = index + 1
-            song_embed.add_field(name='Song Queue', value=message)
-            embed_pages.append(song_embed)
-        # for index, song in enumerate(queue):
-        #    message += f"  `{index+1}.` **{song['title']}** " \
-        #              f"(requested by {song['requested_by'].mention})\n"# add individual songs
-        # embed.add_field(name='Song Queue', value=message)
-        await retrieve_msg.delete()
-        p_session = PaginatorSession(ctx, footer=f"{len(queue)} songs in the queue", pages=embed_pages)
-        await p_session.run()
-    else:
-        embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1), description="The queue is empty")
-        await ctx.send(embed=embed)
-
-
 async def _pause_audio(ctx, client):
     if client.is_paused():
         client.resume()
@@ -108,6 +82,15 @@ class Music(commands.Cog):
         self.bot = bot
         self.states = {}
         self.bot.add_listener(self.on_voice_state_update, "on_voice_state_update")
+        self.state = None
+        self.is_playing = False
+        self.vc_connected = False
+        self.r_channel_id = None
+        self.current_index = 0
+        self.FFMPEG_OPTIONS = {
+            'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
+            'options': '-vn',
+        }
 
     def get_state(self, guild):
         """Gets the state for `guild`, creating it if it does not exist."""
@@ -146,15 +129,20 @@ class Music(commands.Cog):
                 await ctx.send(embed=embed)
 
         in_vc = await in_voice_channel(ctx)
-        is_playing = await audio_playing(ctx, respond=False)
+        _is_playing = await audio_playing(ctx, respond=False)
 
         state = self.get_state(ctx.guild)
         if in_vc:
             client = ctx.guild.voice_client
-            if is_playing and ctx.author.voice is not None and ctx.author.voice.channel is not None:
+            if _is_playing and ctx.author.voice is not None and ctx.author.voice.channel is not None:
                 await _pause_audio(ctx, client)
             else:
                 self._play_song(client, state, state.now_playing)
+                await self.send_playing(state.now_playing)
+
+    async def send_playing(self, song):
+        channel = self.bot.get_channel(int(self.r_channel_id))
+        await channel.send("Now Playing: ", embed=get_embed(song))
 
     @commands.command(aliases=["vol", "v"])
     @commands.guild_only()
@@ -230,18 +218,26 @@ class Music(commands.Cog):
         state.now_playing = song
         state.skip_votes = set()  # clear skip votes
         source = discord.PCMVolumeTransformer(
-            discord.FFmpegPCMAudio(song['stream_url'],
-                                   before_options='-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5'),
+            discord.FFmpegPCMAudio(song['stream_url'], **self.FFMPEG_OPTIONS),
+
             volume=state.volume)
 
         def after_playing(err):
-            if len(state.playlist) > 0:
-                next_song = state.playlist.pop(0)
+            self.current_index = self.current_index + 1
+            if self.current_index <= len(state.playlist):
+                next_song = state.playlist[self.current_index]
                 self._play_song(client, state, next_song)
             else:
                 asyncio.run_coroutine_threadsafe(client.disconnect(), self.bot.loop)
-
-        client.play(source, after=after_playing)
+                self.vc_connected = False
+                self.isplaying = False
+        try:
+            client.play(source, after=after_playing)
+            self.current_index = 1
+        except discord.errors.ClientException:
+            self.is_playing = False
+            self.vc_connected = False
+            pass
 
     @commands.command(aliases=["np"])
     @commands.guild_only()
@@ -256,7 +252,14 @@ class Music(commands.Cog):
     async def queue(self, ctx):
         """Displays the current play queue."""
         state = self.get_state(ctx.guild)
-        await _queue_text(ctx, state.playlist)
+        await self._queue_text(ctx, state.playlist)
+
+        # if pindex + 1 == self.current_index:
+        #     message += f"\t⬐ current track\n" \
+        #                f" ```yaml {index + 1}``` . ```http {song['title']}``` " \
+        #                f"(requested by {song['requested_by'].mention})\n" \
+        #                f"\t⬑ current track\n"  # add individual songs
+        # else:
 
     @commands.command(aliases=["cq"])
     @commands.guild_only()
@@ -317,7 +320,7 @@ class Music(commands.Cog):
             song = state.playlist.pop(song - 1)  # take song at index...
             state.playlist.insert(new_index - 1, song)  # and insert it.
 
-            await _queue_text(ctx, state.playlist)
+            await self._queue_text(ctx, state.playlist)
         else:
             embed = discord.Embed(title="Music Player",
                                   colour=discord.Colour(0x1),
@@ -335,7 +338,7 @@ class Music(commands.Cog):
             song = state.playlist.pop(song - 1)  # take song at index...
             state.playlist.insert(0, song)  # and insert it.
 
-            await _queue_text(ctx, state.playlist)
+            await self._queue_text(ctx, state.playlist)
         else:
             embed = discord.Embed(title="Music Player",
                                   colour=discord.Colour(0x1),
@@ -353,19 +356,11 @@ class Music(commands.Cog):
 
         await self._queue_audio(ctx, url, ctx.author)
 
-    async def play_audio(self, video, requested_by, state, ctx):
-        media = dict(
-            stream_url=video["formats"][0]["url"],
-            video_url=video["webpage_url"],
-            title=video["title"],
-            uploader=video["uploader"] if "uploader" in video else "",
-            thumbnail=video["thumbnail"] if "thumbnail" in video else None,
-            requested_by=requested_by
-        )
+    async def play_audio(self, video, requested_by, state, client):
+        media = get_media(video, requested_by)
 
-        channel = ctx.author.voice.channel
-        client = await channel.connect()
         self._play_song(client, state, media)
+        await self.send_playing(media)
         return media
 
     @commands.Cog.listener()
@@ -380,51 +375,158 @@ class Music(commands.Cog):
 
     async def _queue_audio(self, ctx, url_or_search, requested_by):
         """Plays audio from (or searches for) a URL."""
-        with ytdl.YoutubeDL(YTDL_OPTS) as ydl:
+        self.r_channel_id = ctx.channel.id
+        try:
+            if user_in_channel(ctx):
+                if not self.vc_connected:
+                    channel = ctx.author.voice.channel
+                    client = await channel.connect()
+                    self.vc_connected = True
+                with ytdl.YoutubeDL(YTDL_OPTS) as ydl:
+                    client = ctx.guild.voice_client
+                    state = self.get_state(ctx.guild)  # get the guild's state
 
-            client = ctx.guild.voice_client
-            state = self.get_state(ctx.guild)  # get the guild's state
+                    if not validators.url(url_or_search):
+                        if 'lyric' not in url_or_search and 'lyrics' not in url_or_search:
+                            url_or_search = url_or_search + ' lyrics'
 
-            if not validators.url(url_or_search):
-                if 'lyrics' not in url_or_search and 'lyrics' not in url_or_search:
-                    url_or_search = url_or_search + ' lyrics'
+                    request = ydl.extract_info(url_or_search, download=False)
+                    with concurrent.futures.ThreadPoolExecutor() as executor:
+                        futures = []
+                        if "_type" in request and request["_type"] == "playlist" and validators.url(url_or_search):
+                            for index, song in enumerate(request['entries']):
+                                video = ydl.extract_info(song['url'], download=False)
+                                if self.is_playing:
+                                    futures.append(executor.submit(add_to_playlist,
+                                                                   requested_by=requested_by,
+                                                                   ydl=ydl,
+                                                                   request=song,
+                                                                   state=state,
+                                                                   index=index))
+                                else:
+                                    if user_in_channel(ctx):
+                                        # play
+                                        try:
+                                            media = await self.play_audio(video, requested_by, state, client)
+                                            futures.append(executor.submit(add_to_playlist,
+                                                                           requested_by=requested_by,
+                                                                           ydl=ydl,
+                                                                           request=song,
+                                                                           state=state))
+                                            self.is_playing = True
+                                        except Exception:
+                                            raise
 
-            request = ydl.extract_info(url_or_search, download=False)
-            if "_type" in request and request["_type"] == "playlist":
-                for index, song in enumerate(request['entries']):
-                    video = ydl.extract_info(song['url'], download=False)
-                    await self.check_playing(client, video, requested_by, state, ctx)
-
-                if len(request['entries']) > 1:
-                    embed = discord.Embed(title="Music Player",
-                                          colour=discord.Colour(0x1),
-                                          description=f"Playlist **{request['title']}** "
-                                                      f"by **{request['uploader']}** queued!")
-                    await ctx.send(embed=embed)
+                            if len(request['entries']) > 1:
+                                embed = discord.Embed(title="Music Player",
+                                                      colour=discord.Colour(0x1),
+                                                      description=f"**{len(request['entries'])}** songs added to the queue\n"
+                                                                  f"from Playlist **{request['title']}** "
+                                                                  f"by **{request['uploader']}** queued!")
+                                await ctx.send(embed=embed)
+                        else:
+                            if 'entries' in request and len(request['entries']) == 1:
+                                request = request['entries'][0]
+                            if user_in_channel(ctx):
+                                video = ydl.extract_info(request['url'], download=False)
+                                if self.is_playing:
+                                    futures.append(executor.submit(add_to_playlist,
+                                                                   ctx=ctx,
+                                                                   requested_by=requested_by,
+                                                                   ydl=ydl,
+                                                                   request=request,
+                                                                   state=state))
+                                    await ctx.send('Added to Playlist', embed=get_embed(get_media(video, requested_by)))
+                                else:
+                                    media = await self.play_audio(video, requested_by, state, client)
+                                    futures.append(executor.submit(add_to_playlist,
+                                                                   ctx=ctx,
+                                                                   requested_by=requested_by,
+                                                                   ydl=ydl,
+                                                                   request=request,
+                                                                   state=state))
+                                    self.is_playing = True
+                            else:
+                                raise NotInSameVc
             else:
-                await self.check_playing(client, request, requested_by, state, ctx)
+                raise NotInSameVc
+        except NotInSameVc:
+            await ctx.send(embed=discord.Embed(
+                title="Music Player",
+                colour=discord.Colour(0x1),
+                description=f"You need to be in the vc with the bot"))
 
-    async def check_playing(self, client, video, requested_by, state, ctx, info=None):
-        if client and client.channel:  # bot is not already in the channel playing music
-            # queue
-            media = add_to_playlist(video, requested_by, state)
-            if info is not None and len(info['entries']) == 1:
-                await ctx.send("Added to queue.", embed=get_embed(media))
+    async def _queue_text(self, ctx, queue):
+        """Returns a block of text describing a given song queue."""
+        if len(queue) > 0:
 
-        else:  # immediaetly play song
-            if ctx.author.voice is not None and ctx.author.voice.channel is not None:
-                # play
-                try:
-                    media = await self.play_audio(video, requested_by, state, ctx)
-                    await ctx.send("Now Playing: ", embed=get_embed(media))
-                except Exception:
-                    raise
+            embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1), description="Retrieving  queue...")
+            retrieve_msg = await ctx.send(embed=embed)
 
-            else:
-                await ctx.send(embed=discord.Embed(
-                    title="Music Player",
-                    colour=discord.Colour(0x1),
-                    description=f"You need to be in the vc with the bot"))
+            queue_2d = list(divide_chunks(queue, 8))
+
+            embed_pages = []
+            index = 1
+            for pages in queue_2d:
+                message = str("```nim\n")
+                song_embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1))
+                for pindex, song in enumerate(pages):
+                    songtitle = song['title']
+                    if len(songtitle) > 51:
+                        songtitle = (songtitle[:51] + ' ..')
+                    if index == self.current_index-1:
+                        message += str("\t⬐ current track\n")
+                        message += str("{}. {}\n".format(index, songtitle))
+                        message += str("\t⬑ current track\n")  # add individual songs
+                    else:
+                        message += str("{}. {}\n".format(index, songtitle))
+                    index = index + 1
+                message += str("```")
+                song_embed.add_field(name='Song Queue', value=message)
+                embed_pages.append(song_embed)
+            await retrieve_msg.delete()
+            p_session = PaginatorSession(ctx, footer=f"{len(queue)} songs in the queue", pages=embed_pages)
+            await p_session.run()
+        else:
+            embed = discord.Embed(title="Music Player", colour=discord.Colour(0x1), description="The queue is empty")
+            await ctx.send(embed=embed)
+
+
+def add_to_playlist(requested_by, ydl, request, state, index=1):
+    print("-> NR {}".format(str(index)))
+    video = ydl.extract_info(request['url'], download=False)
+    media = get_media(video, requested_by)
+    state.playlist.append(media)
+
+
+def get_media(video, requested_by):
+    media = dict(
+        stream_url=video["formats"][0]["url"],
+        video_url=video["webpage_url"],
+        title=video["title"],
+        uploader=video["uploader"] if "uploader" in video else "",
+        thumbnail=video["thumbnail"] if "thumbnail" in video else None,
+        requested_by=requested_by
+    )
+    return media
+
+
+def user_in_channel(ctx):
+    if ctx.author.voice is not None and ctx.author.voice.channel is not None:
+        return True
+    else:
+        return False
+
+
+def is_playing(client):
+    if client and client.channel:  # bot is not already in the channel playing music
+        return True
+    else:
+        return False
+
+
+def add_queue(media):
+    print('added to queue')
 
 
 def divide_chunks(_l, n):
@@ -452,20 +554,6 @@ def get_embed(video):
     return embed
 
 
-def add_to_playlist(video, requested_by, state):
-    media = dict(
-        stream_url=video["formats"][0]["url"],
-        video_url=video["webpage_url"],
-        title=video["title"],
-        uploader=video["uploader"] if "uploader" in video else "",
-        thumbnail=video["thumbnail"] if "thumbnail" in video else None,
-        requested_by=requested_by
-    )
-
-    state.playlist.append(media)
-    return media
-
-
 def check_config():
     config = configparser.ConfigParser()
     config.read('settings.ini')
@@ -489,6 +577,10 @@ def check_config():
 
 def setup(bot):
     bot.add_cog(Music(bot))
+
+
+class NotInSameVc(Exception):
+    pass
 
 
 class GuildState:
