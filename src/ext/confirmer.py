@@ -65,10 +65,10 @@ class ConfirmerSession:
             except asyncio.TimeoutError:
                 self.running = False
                 try:
-                    await self.message.clear_reactions()  # tries to remove reactions
-                except Exception as e:
-                    print(e)
-                    pass  # no perms
+                    try:
+                        await self.message.clear_reactions()  # tries to remove reactions
+                    except Exception as e:
+                        print(e)
                 finally:
                     break  # stops no matter what
             else:
@@ -77,7 +77,6 @@ class ConfirmerSession:
                     await self.message.remove_reaction(reaction, user)
                 except Exception as e:
                     print(e)
-                    pass
 
                 action = self.reactions[reaction.emoji]  # gets the function from the reaction map OrderedDict
                 response = await action()  # awaits here with () because __init__ can't be async
@@ -88,8 +87,8 @@ class ConfirmerSession:
         """Accept the prompt."""
         try:
             await self.message.clear_reactions()
-        except:
-            pass
+        except Exception as e:
+            print(e)
 
         self.running = False
         return True
@@ -98,8 +97,8 @@ class ConfirmerSession:
         """Deny the prompt."""
         try:
             await self.message.clear_reactions()
-        except:
-            pass
+        except Exception as e:
+            print(e)
 
         self.running = False
         return False
