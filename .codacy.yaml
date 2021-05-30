@@ -1,8 +1,0 @@
----
-engines:
-  duplication:
-    exclude_paths:
-      - "src/"
-    config:
-      languages:
-        - "python"
