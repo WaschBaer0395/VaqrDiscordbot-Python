@@ -2,7 +2,7 @@ discord.py==1.7.2
 dnspython==2.1.0
 PyNaCl
 async-timeout==3.0.1
-python-dotenv~=0.17.0
+python-dotenv~=0.17.1
 apscheduler~=3.7.0
 urbandictionary
 wikipedia
@@ -11,3 +11,5 @@ nest-asyncio
 youtube_dl
 pytz~=2021.1
 mysql-connector-python
+ffmpeg==1.4
+validators~=0.18.2
