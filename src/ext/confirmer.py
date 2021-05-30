@@ -6,8 +6,10 @@ from collections import OrderedDict
 
 class ConfirmerSession:
 
-    """Class that interactively paginates
-    a set of embed using reactions."""
+    """
+    Class that interactively paginates
+    a set of embed using reactions.
+    """
 
     def __init__(self, ctx, timeout=60, page='', color=discord.Color.green(), footer=''):
         """Confirmer init."""
@@ -64,7 +66,8 @@ class ConfirmerSession:
                 self.running = False
                 try:
                     await self.message.clear_reactions()  # tries to remove reactions
-                except:
+                except Exception as e:
+                    print(e)
                     pass  # no perms
                 finally:
                     break  # stops no matter what
@@ -72,7 +75,8 @@ class ConfirmerSession:
                 # same as above
                 try:
                     await self.message.remove_reaction(reaction, user)
-                except:
+                except Exception as e:
+                    print(e)
                     pass
 
                 action = self.reactions[reaction.emoji]  # gets the function from the reaction map OrderedDict
@@ -92,7 +96,6 @@ class ConfirmerSession:
 
     async def deny(self):
         """Deny the prompt."""
-
         try:
             await self.message.clear_reactions()
         except:
