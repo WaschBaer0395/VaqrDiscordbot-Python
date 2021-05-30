@@ -5,7 +5,6 @@ from collections import OrderedDict
 
 
 class ConfirmerSession:
-
     """
     Class that interactively paginates
     a set of embed using reactions.
@@ -65,12 +64,10 @@ class ConfirmerSession:
             except asyncio.TimeoutError:
                 self.running = False
                 try:
-                    try:
-                        await self.message.clear_reactions()  # tries to remove reactions
-                    except Exception as e:
-                        print(e)
-                finally:
-                    break  # stops no matter what
+                    await self.message.clear_reactions()  # tries to remove reactions
+                except Exception as e:
+                    print(e)
+                    break
             else:
                 # same as above
                 try:
