@@ -5,10 +5,8 @@ from collections import OrderedDict
 
 
 class ConfirmerSession:
-    """
-    Class that interactively paginates
-    a set of embed using reactions.
-    """
+    """Class that interactively paginates
+    a set of embed using reactions."""
 
     def __init__(self, ctx, timeout=60, page='', color=discord.Color.green(), footer=''):
         """Confirmer init."""
