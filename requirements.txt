@@ -11,5 +11,5 @@ nest-asyncio
 youtube_dl
 pytz~=2021.1
 mysql-connector-python
-ffmpeg==1.4
 validators~=0.18.2
+git+git://github.com/ritiek/spotify-downloader.git
