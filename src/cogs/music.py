@@ -403,7 +403,7 @@ class Music(commands.Cog):
                                     if user_in_channel(ctx):
                                         # play
                                         try:
-                                            channel, client = await self.check_connect(
+                                            _, client = await self.check_connect(
                                                 ctx)  # checking if bot is connected
                                             # adding first song directly
                                             add_to_playlist(requested_by=requested_by,
@@ -434,7 +434,7 @@ class Music(commands.Cog):
                                             await ctx.send('Added to Playlist',
                                                            embed=get_embed(_.result()[1]))
                                     else:
-                                        channel, client = await self.check_connect(ctx)  # checking if bot is connected
+                                        _, client = await self.check_connect(ctx)  # checking if bot is connected
                                         add_to_playlist(requested_by=requested_by,
                                                         request=request,
                                                         state=state)
