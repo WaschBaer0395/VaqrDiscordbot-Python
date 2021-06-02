@@ -7,9 +7,13 @@ import youtube_dl as ytdl
 import logging
 import math
 import validators
-
+import ypc.spotify_utils as spyt
 from discord.ext import commands
+from ypc.__main__ import extract_terms_from_arg
+
 from ext.paginator import PaginatorSession
+from operator import itemgetter
+from tqdm import tqdm
 
 playing = False
 
@@ -390,65 +394,18 @@ class Music(commands.Cog):
 
                     if req_type == 'Youtube':
                         request = ydl.extract_info(url_or_search, download=False)
-                        with concurrent.futures.ThreadPoolExecutor() as executor:
-                            futures = []
-                            if "_type" in request and request["_type"] == "playlist" and validators.url(url_or_search):
-                                if self.is_playing:
-                                    executor.map(add_to_playlist,
-                                                 itertools.repeat(requested_by),
-                                                 itertools.repeat(ydl),
-                                                 request['entries'],
-                                                 itertools.repeat(state))
-                                else:
-                                    if user_in_channel(ctx):
-                                        # play
-                                        try:
-                                            _, client = await self.check_connect(
-                                                ctx)  # checking if bot is connected
-                                            # adding first song directly
-                                            add_to_playlist(requested_by=requested_by,
-                                                            request=request['entries'][0],
-                                                            state=state)
-                                            # adding rest of the songs via background threads
-                                            executor.map(add_to_playlist,
-                                                         itertools.repeat(requested_by),
-                                                         request['entries'],
-                                                         itertools.repeat(state))
-                                            # playing the first song
-                                            song = self.get_playlist(ctx)[0]['video_url']
-                                            await self.play_audio(song, requested_by, state, client, extract=True)
-                                        except Exception:
-                                            raise
-                            else:
-                                if 'entries' in request and len(request['entries']) == 1:
-                                    request = request['entries'][0]
-                                if user_in_channel(ctx):
-                                    if self.is_playing:
-                                        futures.append(executor.submit(add_to_playlist,
-                                                                       requested_by=requested_by,
-                                                                       request=request,
-                                                                       state=state,
-                                                                       playlist=False,
-                                                                       ctx=ctx))
-                                        for _ in concurrent.futures.as_completed(futures):
-                                            await ctx.send('Added to Playlist',
-                                                           embed=get_embed(_.result()[1]))
-                                    else:
-                                        _, client = await self.check_connect(ctx)  # checking if bot is connected
-                                        add_to_playlist(requested_by=requested_by,
-                                                        request=request,
-                                                        state=state)
-                                        await self.play_audio(request['url'], requested_by, state, client, extract=True)
-                                        self.is_playing = True
-                                else:
-                                    raise NotInSameVc
-                        if 'entries' in request:
+                        if "_type" in request and request["_type"] == "playlist" and validators.url(url_or_search):
+                            request = list(map(itemgetter('url'), request['entries']))
+
+                            await self.queue_playlist(ctx, request, requested_by, state)
                             embed = discord.Embed(title="Music Player",
                                                   colour=discord.Colour(0x1),
                                                   description=f"**{len(request['entries'])}** songs added to the queue\n"
                                                               f"from Playlist **{request['title']}** "
                                                               f"by **{request['uploader']}** queued!")
                             await ctx.send(embed=embed)
+                        else:
+                            await self.queue_song(ctx, request, requested_by, state)
                     elif req_type == 'Spotify':
                         return
                     elif req_type == 'False':
@@ -458,6 +415,62 @@ class Music(commands.Cog):
                 title="Music Player",
                 colour=discord.Colour(0x1),
                 description=f"You need to be in the vc with the bot"))
+
+    async def queue_song(self, ctx, request, requested_by, state):
+        if 'entries' in request and len(request['entries']) == 1:
+            request = request['entries'][0]
+        if user_in_channel(ctx):
+            if self.is_playing:
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    futures = [executor.submit(add_to_playlist,
+                                               requested_by=requested_by,
+                                               request=request,
+                                               state=state,
+                                               playlist=False,
+                                               ctx=ctx)]
+                for _ in concurrent.futures.as_completed(futures):
+                    await ctx.send('Added to Playlist',
+                                   embed=get_embed(_.result()[1]))
+            else:
+                _, client = await self.check_connect(ctx)  # checking if bot is connected
+                add_to_playlist(requested_by=requested_by,
+                                request=request,
+                                state=state)
+                await self.play_audio(request['url'], requested_by, state, client, extract=True)
+                self.is_playing = True
+        else:
+            raise NotInSameVc
+
+    async def queue_playlist(self, ctx, request, requested_by, state):
+        if self.is_playing:
+            with ytdl.YoutubeDL(YTDL_OPTS) as ydl:
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    executor.map(add_to_playlist,
+                                 itertools.repeat(requested_by),
+                                 itertools.repeat(ydl),
+                                 request,
+                                 itertools.repeat(state))
+        else:
+            if user_in_channel(ctx):
+                # play
+                try:
+                    _, client = await self.check_connect(
+                        ctx)  # checking if bot is connected
+                    # adding first song directly
+                    add_to_playlist(requested_by=requested_by,
+                                    request=request[0],
+                                    state=state)
+                    # adding rest of the songs via background threads
+                    with concurrent.futures.ThreadPoolExecutor() as executor:
+                        executor.map(add_to_playlist,
+                                     itertools.repeat(requested_by),
+                                     request['entries'],
+                                     itertools.repeat(state))
+                    # playing the first song
+                    song = self.get_playlist(ctx)[0]['video_url']
+                    await self.play_audio(song, requested_by, state, client, extract=True)
+                except Exception:
+                    raise
 
     async def _queue_text(self, ctx, queue):
         """Returns a block of text describing a given song queue."""
@@ -508,6 +521,16 @@ class Music(commands.Cog):
         return self.get_state(ctx.guild).playlist
 
 
+def spoty(request):
+    # https://open.spotify.com/playlist/4KHPdefbLFGWvIZFj4sxxr?si=1553cb0a09484093
+    terms = extract_terms_from_arg(request)
+    df = spyt.get_spotify_songs(terms)
+    songs = []
+    for _, x in tqdm(df.iterrows(), dynamic_ncols=True, total=df.shape[0]):
+        songs.append(x['title'])
+    return songs
+
+
 def check_request(url_or_search):
     if 'open.spotify.com' in url_or_search:
         return url_or_search, 'Spotify'
@@ -522,7 +545,7 @@ def check_request(url_or_search):
 
 def add_to_playlist(requested_by, request, state, playlist=True, ctx=None):
     with ytdl.YoutubeDL(YTDL_OPTS) as ydl:
-        video = ydl.extract_info(request['url'], download=False)
+        video = ydl.extract_info(request, download=False)
     media = get_media(video, requested_by)
     state.playlist.append(media)
     if not playlist:
