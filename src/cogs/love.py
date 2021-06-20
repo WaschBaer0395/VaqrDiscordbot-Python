@@ -11,7 +11,7 @@ class Love(commands.Cog):
         self.bot = _bot
         self.conf, self.settings = check_config('LOVE', {'SpecialRoleID': '855830021247729675'})
 
-        self.gifs = [
+        self.love = [
             'https://cdn.discordapp.com/attachments/823041335678206042/855552686484488241/image0.gif',
             'https://cdn.discordapp.com/attachments/823041335678206042/855552752917413898/image0.gif',
             'https://cdn.discordapp.com/attachments/823041335678206042/855552843448451083/image0.gif',
@@ -38,6 +38,31 @@ class Love(commands.Cog):
             'https://cdn.discordapp.com/attachments/823041335678206042/855556067836035122/image0.gif',
             'https://cdn.discordapp.com/attachments/823041335678206042/855556205308411984/image0.gif',
         ]
+
+        self.dissapointed = [
+            'https://cdn.discordapp.com/attachments/823041335678206042/855894335224414228/image0.gif',
+            'https://cdn.discordapp.com/attachments/823041335678206042/855893912168955904/image0.gif',
+            'https://cdn.discordapp.com/attachments/823041335678206042/855894114003582996/image0.gif',
+            'https://cdn.discordapp.com/attachments/823041335678206042/855894244858527774/image0.gif',
+            'https://cdn.discordapp.com/attachments/823041335678206042/855894438824247316/image0.gif',
+            'https://cdn.discordapp.com/attachments/823041335678206042/855894494163763220/image0.gif',
+            'https://cdn.discordapp.com/attachments/823041335678206042/856065475871768607/image0.gif',
+            'https://cdn.discordapp.com/attachments/823041335678206042/856065541685248030/image0.gif',
+            'https://cdn.discordapp.com/attachments/823041335678206042/856065625104056431/image0.gif',
+            'https://cdn.discordapp.com/attachments/823041335678206042/856065737886138368/image0.gif'
+        ]
+
+        self.eh = [
+            'https://cdn.discordapp.com/attachments/823041335678206042/856066020129112084/image0.gif',
+            'https://cdn.discordapp.com/attachments/823041335678206042/856066083454451732/image0.gif',
+            'https://cdn.discordapp.com/attachments/823041335678206042/856066165938847774/image0.gif',
+            'https://cdn.discordapp.com/attachments/823041335678206042/856066323553452062/image0.gif',
+            'https://cdn.discordapp.com/attachments/823041335678206042/856066391728062474/image0.gif',
+            'https://cdn.discordapp.com/attachments/823041335678206042/856066433108279317/image0.gif',
+            'https://cdn.discordapp.com/attachments/823041335678206042/856066974823874570/image0.gif',
+            'https://media1.tenor.com/images/71909d2379b8d7c2e8f2826a0ccffd2f/tenor.gif',
+        ]
+
 
     @commands.command()
     async def love(self, ctx, user: commands.Greedy[discord.User]):
@@ -95,8 +120,12 @@ class Love(commands.Cog):
                     if love == 69:
                         special = 'Woah 69 , wink wink'
                         image = 'https://media1.tenor.com/images/d3cb268f65351cdb5dadb9a889746875/tenor.gif'
+                    elif 0 <= love < 40:
+                        image = random.choice(self.dissapointed)
+                    elif 40 <= love < 60:
+                        image = random.choice(self.eh)
                     else:
-                        image = random.choice(self.gifs)
+                        image = random.choice(self.love)
                     break
 
         embed = discord.Embed(description=f"There is {love}" + msg + "\n"
