@@ -87,29 +87,36 @@ class Love(commands.Cog):
                         image = 'https://media1.tenor.com/images/31362a548dc7574f80d01a42a637bc93/tenor.gif'
                         break
 
-                if author.id == 150117644832473088 or user.id == 150117644832473088:  # LdKing
+                elif author.id == 150117644832473088 or user.id == 150117644832473088:  # LdKing
                     if author.id == 815045139042402344 or user.id == 815045139042402344:  # Molly
                         love = -200
                         special = 'Molly gonna come and fuck him up, i swear (she says that like 300 times a day)'
                         image = 'https://media1.tenor.com/images/e2cde22ec0c747c6f1f5776173ffc252/tenor.gif'
                         break
 
-                if author.id == 782702698171727902 or user.id == 782702698171727902:  # Amy
+                elif author.id == 782702698171727902 or user.id == 782702698171727902:  # Amy
                     if author.id == 815045139042402344 or user.id == 815045139042402344:  # Molly
                         love = 200
                         special = 'They do be lovi\'n eachother alot :heart: '
                         image = 'https://media1.tenor.com/images/20afd6fa304cd271ba789c45132f6755/tenor.gif'
                         break
 
-                if author.id == 129840730565902337 or user.id == 129840730565902337:  # Alice
+                elif author.id == 228322335504072705 or user.id == 228322335504072705:  # Jonas
+                    if author.id == 283056284402712576 or user.id == 283056284402712576:  # Coco
+                        love = 169
+                        special = 'I think, we all knew about this 😏'
+                        image = 'https://media.tenor.com/images/fed38b3f86751a4d342ce6dcb7893ca1/tenor.gif'
+                        break
+
+                elif author.id == 129840730565902337 or user.id == 129840730565902337:  # Alice
+                    specialroleid = int(self.conf.get('LOVE', 'SpecialRoleID'))
+                    rolemembers = self.bot.guilds[0].get_role(specialroleid).members
                     if author.id == 228322335504072705 or user.id == 228322335504072705:  # Jonas
                         love = '[cannot calculate with such high numbers]'
                         special = "It is, as if they are meant for eachother :heart:"
                         image = 'https://media1.tenor.com/images/7d72269b489123ab2c063e2797a17022/tenor.gif'
                         break
-                    specialroleid = int(self.conf.get('LOVE', 'SpecialRoleID'))
-                    rolemembers = self.bot.guilds[0].get_role(specialroleid).members
-                    if author in rolemembers or user in rolemembers:
+                    elif author in rolemembers or user in rolemembers:
                         love = 100
                         msg = f" of love between <@{author.id}> and <@{user.id}>"
                         special = "this was 100% a correct calculation, and i was not forced to say that. ᵖˡˢ ˢᵉⁿᵈ ʰᵉˡᵖ"
