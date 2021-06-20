@@ -9,7 +9,6 @@ class Love(commands.Cog):
 
     def __init__(self, _bot):
         """Love command, showing love between author and tagged user"""
-
         self.bot = _bot
         self.conf, self.settings = check_config('LOVE', {'SpecialRoleID': '855830021247729675'})
 
