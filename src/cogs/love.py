@@ -8,6 +8,8 @@ from ext.config import check_config, save_config
 class Love(commands.Cog):
 
     def __init__(self, _bot):
+        """Love command, showing love between author and tagged user"""
+
         self.bot = _bot
         self.conf, self.settings = check_config('LOVE', {'SpecialRoleID': '855830021247729675'})
 
@@ -145,7 +147,7 @@ class Love(commands.Cog):
                                   description=f"Special Role has been set to {role[0].name}")
         else:
             embed = discord.Embed(title="Role", colour=discord.Colour(0x269a78),
-                                  description=f"Please enter a correct Role for the Specialrole")
+                                  description="Please enter a correct Role for the Specialrole")
 
         await ctx.send(embed=embed)
 
