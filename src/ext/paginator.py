@@ -1,6 +1,7 @@
 import discord
 from collections import OrderedDict
 import asyncio
+from src.ext.controlbuttons import ControlButtons
 
 
 class PaginatorSession:
@@ -19,12 +20,13 @@ class PaginatorSession:
         self.current = 0  # current page index, int
         self.color = color  # embed color
         # can't be awaited here, must be done in PaginatorSession.run()
+
         self.reactions = OrderedDict({
-            '⏮': self.first_page,
-            '◀': self.previous_page,
-            '⏹': self.close,
-            '▶': self.next_page,
-            '⏭': self.last_page
+            'â®': self.first_page,
+            'â—€': self.previous_page,
+            'â¹': self.close,
+            'â–¶': self.next_page,
+            'â­': self.last_page
         })
 
     # this wasn't used but i'll just leave it here i guess
@@ -38,6 +40,7 @@ class PaginatorSession:
         return index >= 0 or index < len(self.pages)  # removed +1 so it's < instead of <=
 
     async def show_page(self, index: int):
+
         if not self.valid_page(index):
             return  # checks for a valid page
 
@@ -50,14 +53,16 @@ class PaginatorSession:
             await self.message.edit(embed=page)
         else:
             self.running = True
+            view = ControlButtons()
             # sends the message
-            self.message = await self.ctx.send(embed=page)
+            self.message = await self.ctx.send(embed=page, view=view)
+
 
             # adds reactions
-            for reaction in self.reactions.keys():
-                if len(self.pages) == 2 and reaction in '⏮⏭':
-                    continue  # ignores 2 page embed first and last emojis
-                await self.message.add_reaction(reaction)
+            #for reaction in self.reactions.keys():
+            #    if len(self.pages) == 2 and reaction in 'â®â­':
+            #        continue  # ignores 2 page embed first and last emojis
+            #    await self.message.add_reaction(reaction)
 
     def react_check(self, reaction, user):
         """Check to make sure it only responds to reactions from the sender and on the same message."""
@@ -76,9 +81,10 @@ class PaginatorSession:
         while self.running:
             try:
                 # waits for reaction using react_check
-                reaction, user = await self.ctx.bot.wait_for('reaction_add',
+                reaction, user = await self.ctx.bot.wait_for('button_press',
                                                              check=self.react_check,
                                                              timeout=self.timeout)
+                print(reaction, user)
             except asyncio.TimeoutError:
                 self.running = False
                 try:
@@ -108,7 +114,7 @@ class PaginatorSession:
 
     async def next_page(self):
         """Go to the next page."""
-        if len(self.pages)-1 < self.current + 1:
+        if len(self.pages) - 1 < self.current + 1:
             return await self.show_page(self.current)
         else:
             return await self.show_page(self.current + 1)
@@ -127,3 +133,4 @@ class PaginatorSession:
             await self.message.clear_reactions()
         except:
             pass
+
