@@ -1,7 +1,8 @@
 import discord
 from collections import OrderedDict
 import asyncio
-from src.ext.controlbuttons import ControlButtons
+import pycord_components
+from pycord_components import Button, ButtonStyle
 
 
 class PaginatorSession:
@@ -53,16 +54,30 @@ class PaginatorSession:
             await self.message.edit(embed=page)
         else:
             self.running = True
-            view = ControlButtons()
+            #view = ControlButtons()
             # sends the message
-            self.message = await self.ctx.send(embed=page, view=view)
+            components = [  # Use any button style you wish to :)
+                [
+                    Button(
+                        label="Prev",
+                        id="back",
+                        style=ButtonStyle.red
+                    ),
+                    Button(
+                        label=f"Page {int(self.pages.index(self.pages[self.current])) + 1}/{len(self.pages)}",
+                        id="cur",
+                        style=ButtonStyle.grey,
+                        disabled=True
+                    ),
+                    Button(
+                        label="Next",
+                        id="front",
+                        style=ButtonStyle.red
+                    )
+                ]
+            ]
 
-
-            # adds reactions
-            #for reaction in self.reactions.keys():
-            #    if len(self.pages) == 2 and reaction in 'â®â­':
-            #        continue  # ignores 2 page embed first and last emojis
-            #    await self.message.add_reaction(reaction)
+            self.message = await self.ctx.reply(embed=page, components=components)
 
     def react_check(self, reaction, user):
         """Check to make sure it only responds to reactions from the sender and on the same message."""
