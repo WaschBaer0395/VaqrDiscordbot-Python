@@ -1,3 +1,5 @@
+import compileall
+
 import discord
 import asyncio
 from discord_components import DiscordComponents, Button, ButtonStyle, Interaction
@@ -40,6 +42,15 @@ class PaginatorSession:
             ]
         ]
 
+    def check_usage(self, interaction):
+        if interaction.component.id not in ["front", "back"]:
+            return False
+        if self.ctx.author.id != interaction.author.id:
+            return False
+        if self.message.id != interaction.message.id:
+            return False
+        return True
+
     async def run(self):
         # Sets a default embed
         self.current = 0
@@ -58,13 +69,13 @@ class PaginatorSession:
 
                 interaction = await self.ctx.bot.wait_for(
                     "button_click",
-                    check=lambda i: i.component.label in ["Next", "Prev"],  # You can add more
+                    check=self.check_usage,  # You can add more
                     timeout=10.0  # 10 seconds of inactivity
                 )
                 # Getting the right list index
-                if interaction.component.label == "Prev":
+                if interaction.component.id == "back":
                     self.current -= 1
-                elif interaction.component.label == "Next":
+                elif interaction.component.id == "front":
                     self.current += 1
                 # If its out of index, go back to start / end
                 if self.current == len(self.pages):
