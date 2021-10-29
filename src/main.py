@@ -29,6 +29,7 @@ import os
 import sys
 import traceback
 import discord
+import discord_components
 
 from ext.paginator import PaginatorSession
 from ext import utils
@@ -43,7 +44,6 @@ load_dotenv()
 TOKEN = 'None'
 PREFIX = '!'
 bot = commands.Bot(PREFIX, intents=intents)
-
 path = 'cogs.'
 extensions = [x.replace('.py', '') for x in os.listdir(os.getcwd()+'/src/cogs/') if x.endswith('.py')]
 
@@ -271,8 +271,7 @@ async def help(ctx, *, command: str=None):
         pages.append(em)
     em = format_bot_help(ctx)
     pages.append(em)
-
-    p_session = PaginatorSession(ctx, footer=f'Type {ctx.prefix}help command for more info on a command.', pages=pages)
+    p_session = PaginatorSession(ctx, pages)
     await p_session.run()
 
 

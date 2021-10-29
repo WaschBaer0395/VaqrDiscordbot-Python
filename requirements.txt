@@ -1,5 +1,5 @@
-git+git://github.com/Pycord-Development/pycord.git
-pycord-components
+py-cord
+discord_components
 dnspython==2.1.0
 PyNaCl
 async-timeout==3.0.1
