@@ -1,11 +1,14 @@
 import compileall
 
 import discord
+from discord import Component, Button, Interaction
+from discord.ext import commands
+from discord import ButtonStyle
+from discord.types.components import ButtonComponent
 import asyncio
-from discord_components import DiscordComponents, Button, ButtonStyle, Interaction
 
 
-class PaginatorSession:
+class PaginatorSession(commands.Cog):
     """Class that interactively paginates
     a set of embed using reactions."""
 
@@ -13,32 +16,34 @@ class PaginatorSession:
         if pages is None:
             pages = []
         self.ctx = ctx  # ctx
+        self.ctx.add_view(view=discord.ui.View(timeout=None))
         self.pages = pages  # the list of embeds list[discord.Embed, discord.Embed]
         self.running = False  # currently running, bool
         self.message = None  # current message being paginated, discord.Message
         self.current = 0  # current page index, int
-        self.dbot = DiscordComponents(self.ctx.bot)
+        self.interaction = None
         # can't be awaited here, must be done in PaginatorSession.run()
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        """This function is called every time the bot restarts.
+        If a view was already created before (with the same custom IDs for buttons)
+        it will be loaded and the bot will start watching for button clicks again.
+        """
+
+        # we recreate the view as we did in the /post command
+        view = discord.ui.View(timeout=None)
+        # make sure to set the guild ID here to whatever server you want the buttons in
+
+        # add the view to the bot so it will watch for button interactions
+        self.ctx.add_view(view)
 
     def get_components(self):
         return [  # Use any button style you wish to :)
             [
-                Button(
-                    label="Prev",
-                    id="back",
-                    style=ButtonStyle.red
-                ),
-                Button(
-                    label=f"Page {int(self.pages.index(self.pages[self.current])) + 1}/{len(self.pages)}",
-                    id="cur",
-                    style=ButtonStyle.grey,
-                    disabled=True
-                ),
-                Button(
-                    label="Next",
-                    id="front",
-                    style=ButtonStyle.red
-                )
+                Button(data=ButtonComponent(style=ButtonStyle.red, type=2)),
+                Button(data=ButtonComponent(style=ButtonStyle.red, type=2)),
+                Button(data=ButtonComponent(style=ButtonStyle.red, type=2))
             ]
         ]
 
@@ -56,7 +61,7 @@ class PaginatorSession:
         self.current = 0
         # Sending first message
         # I used ctx.reply, you can use simply send as well
-        self.message = await self.ctx.reply(
+        self.message = await self.ctx.send(
             "**Pagination!**",
             embed=self.pages[self.current],
             components=self.get_components()
@@ -67,15 +72,15 @@ class PaginatorSession:
             # Try and except blocks to catch timeout and break
             try:
 
-                interaction = await self.ctx.bot.wait_for(
+                self.interaction = await self.ctx.bot.wait_for(
                     "button_click",
                     check=self.check_usage,  # You can add more
-                    timeout=10.0  # 10 seconds of inactivity
+                    #timeout=10.0  # 10 seconds of inactivity
                 )
                 # Getting the right list index
-                if interaction.component.id == "back":
+                if self.interaction.component.id == "back":
                     self.current -= 1
-                elif interaction.component.id == "front":
+                elif self.interaction.component.id == "front":
                     self.current += 1
                 # If its out of index, go back to start / end
                 if self.current == len(self.pages):
@@ -84,8 +89,7 @@ class PaginatorSession:
                     self.current = len(self.pages) - 1
 
                 # Edit to new page + the center counter changes
-                await interaction.respond(
-                    type=7,
+                await self.interaction.edit_origin(
                     embed=self.pages[self.current],
                     components=self.get_components()
                 )
@@ -94,24 +98,9 @@ class PaginatorSession:
                 await self.message.edit(
                     components=[
                         [
-                            Button(
-                                label="Prev",
-                                id="back",
-                                style=ButtonStyle.red,
-                                disabled=True
-                            ),
-                            Button(
-                                label=f"Page {int(self.pages.index(self.pages[self.current])) + 1}/{len(self.pages)}",
-                                id="cur",
-                                style=ButtonStyle.grey,
-                                disabled=True
-                            ),
-                            Button(
-                                label="Next",
-                                id="front",
-                                style=ButtonStyle.red,
-                                disabled=True
-                            )
+                            Button(data=ButtonComponent(style=ButtonStyle.red, type=2)),
+                            Button(data=ButtonComponent(style=ButtonStyle.red, type=2)),
+                            Button(data=ButtonComponent(style=ButtonStyle.red, type=2))
                         ]
                     ]
                 )

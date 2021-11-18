@@ -1,8 +1,6 @@
-py-cord
-discord_components
 dnspython==2.1.0
 PyNaCl
-async-timeout==3.0.1
+async-timeout
 python-dotenv~=0.17.1
 apscheduler~=3.7.0
 python-dateutil
@@ -11,6 +9,7 @@ youtube_dl
 pytz~=2021.1
 mysql-connector-python~=8.0.25
 validators~=0.18.2
+git+git://github.com/Pycord-Development/pycord.git@master
 git+git://github.com/ritiek/spotify-downloader.git
 tqdm~=4.61.0
 ypc==1.7.2

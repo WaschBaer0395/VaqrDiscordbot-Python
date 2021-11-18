@@ -29,7 +29,6 @@ import os
 import sys
 import traceback
 import discord
-import discord_components
 
 from ext.paginator import PaginatorSession
 from ext import utils
@@ -273,6 +272,10 @@ async def help(ctx, *, command: str=None):
     pages.append(em)
     p_session = PaginatorSession(ctx, pages)
     await p_session.run()
+    pages = menus.Paginate(pages=["Hey im page 1", "Page 2 here", "Third page reporting for duty"], show_disabled=False)
+    pages.forward_button(label="Next", color="red")
+    pages.back_button(label="Prev", color="gray")
+    await pages.send(ctx, ephemeral=True)
 
 
 def format_bot_help(ctx):
