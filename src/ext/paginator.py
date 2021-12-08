@@ -1,107 +1,114 @@
 import compileall
 
 import discord
-from discord import Component, Button, Interaction
-from discord.ext import commands
-from discord import ButtonStyle
-from discord.types.components import ButtonComponent
-import asyncio
+from discord import abc
+from discord.interactions import Interaction
+from discord.utils import MISSING
+from discord.commands import ApplicationContext
+from discord.ext.commands import Context
 
 
-class PaginatorSession(commands.Cog):
+class PaginatorSession(discord.ui.View):
     """Class that interactively paginates
     a set of embed using reactions."""
 
-    def __init__(self, ctx, pages):
+    def __init__(self, pages):
         if pages is None:
             pages = []
-        self.ctx = ctx  # ctx
-        self.ctx.add_view(view=discord.ui.View(timeout=None))
+        super().__init__(timeout=10)
         self.pages = pages  # the list of embeds list[discord.Embed, discord.Embed]
+        self.page_count = len(self.pages)
         self.running = False  # currently running, bool
         self.message = None  # current message being paginated, discord.Message
         self.current = 0  # current page index, int
-        self.interaction = None
+        self.user = None
+        self.previous_button = self.children[0]
+        self.page_counter = self.children[1]
+        self.forward_button = self.children[2]
         # can't be awaited here, must be done in PaginatorSession.run()
 
-    @commands.Cog.listener()
-    async def on_ready(self):
-        """This function is called every time the bot restarts.
-        If a view was already created before (with the same custom IDs for buttons)
-        it will be loaded and the bot will start watching for button clicks again.
-        """
+    async def interaction_check(self, interaction: Interaction) -> bool:
+        return self.user == interaction.user
 
-        # we recreate the view as we did in the /post command
-        view = discord.ui.View(timeout=None)
-        # make sure to set the guild ID here to whatever server you want the buttons in
+    def change_label(self, current):
+        self.children[1].label = "Page " + str(current+1) + "/" + str(self.page_count)
 
-        # add the view to the bot so it will watch for button interactions
-        self.ctx.add_view(view)
+    async def on_timeout(self) -> None:
+        self.remove_item(self.children[0])
+        self.remove_item(self.children[0])
+        self.remove_item(self.children[0])
+        await self.edit_message()
 
-    def get_components(self):
-        return [  # Use any button style you wish to :)
-            [
-                Button(data=ButtonComponent(style=ButtonStyle.red, type=2)),
-                Button(data=ButtonComponent(style=ButtonStyle.red, type=2)),
-                Button(data=ButtonComponent(style=ButtonStyle.red, type=2))
-            ]
-        ]
-
-    def check_usage(self, interaction):
-        if interaction.component.id not in ["front", "back"]:
-            return False
-        if self.ctx.author.id != interaction.author.id:
-            return False
-        if self.message.id != interaction.message.id:
-            return False
-        return True
-
-    async def run(self):
-        # Sets a default embed
-        self.current = 0
-        # Sending first message
-        # I used ctx.reply, you can use simply send as well
-        self.message = await self.ctx.send(
-            "**Pagination!**",
-            embed=self.pages[self.current],
-            components=self.get_components()
+    async def edit_message(self):
+        self.message = await self.message.edit(
+            content=self.page if isinstance(self.page, str) else None,
+            embed=self.page if isinstance(self.page, discord.Embed) else MISSING,
+            view=self,
         )
-        # Infinite loop
-        counter = 0
-        while True:
-            # Try and except blocks to catch timeout and break
-            try:
 
-                self.interaction = await self.ctx.bot.wait_for(
-                    "button_click",
-                    check=self.check_usage,  # You can add more
-                    #timeout=10.0  # 10 seconds of inactivity
-                )
-                # Getting the right list index
-                if self.interaction.component.id == "back":
-                    self.current -= 1
-                elif self.interaction.component.id == "front":
-                    self.current += 1
-                # If its out of index, go back to start / end
-                if self.current == len(self.pages):
-                    self.current = 0
-                elif self.current < 0:
-                    self.current = len(self.pages) - 1
+    @discord.ui.button(label="Prev", style=discord.ButtonStyle.red, disabled=False)
+    async def prev(self, button: discord.ui.Button, interaction: discord.Interaction):
+        self.current -= 1
 
-                # Edit to new page + the center counter changes
-                await self.interaction.edit_origin(
-                    embed=self.pages[self.current],
-                    components=self.get_components()
-                )
-            except asyncio.TimeoutError:
-                # Disable and get outta here
-                await self.message.edit(
-                    components=[
-                        [
-                            Button(data=ButtonComponent(style=ButtonStyle.red, type=2)),
-                            Button(data=ButtonComponent(style=ButtonStyle.red, type=2)),
-                            Button(data=ButtonComponent(style=ButtonStyle.red, type=2))
-                        ]
-                    ]
-                )
-                break
+        if self.current == 1:
+            self.current = self.page_count-1
+
+        page = self.pages[self.current - 1]
+        self.change_label(self.current)
+        await interaction.response.edit_message(
+            content=page if isinstance(page, str) else None,
+            embed=page if isinstance(page, discord.Embed) else MISSING,
+            view=self,
+        )
+
+    @discord.ui.button(label="Page", style=discord.ButtonStyle.grey, disabled=True)
+    async def page(self, button: discord.ui.Button, interaction: discord.Interaction):
+        await interaction.response.edit_message(view=self)
+
+    @discord.ui.button(label="Next", style=discord.ButtonStyle.red, disabled=False)
+    async def next(self, button: discord.ui.Button, interaction: discord.Interaction):
+        self.current += 1
+
+        if self.current == self.page_count:
+            self.current = 0
+
+        page = self.pages[self.current - 1]
+        self.change_label(self.current)
+        await interaction.response.edit_message(
+            content=page if isinstance(page, str) else None,
+            embed=page if isinstance(page, discord.Embed) else MISSING,
+            view=self,
+        )
+
+    async def run(self, messageable: abc.Messageable, ephemeral: bool = False):
+        if not isinstance(messageable, abc.Messageable):
+            raise TypeError("messageable should be a subclass of abc.Messageable")
+
+        page = self.pages[0]
+        self.change_label(0)
+        if isinstance(messageable, (ApplicationContext, Context)):
+            self.user = messageable.author
+
+        if isinstance(messageable, ApplicationContext):
+            self.message = await messageable.respond(
+                content=page if isinstance(page, str) else None,
+                embed=page if isinstance(page, discord.Embed) else MISSING,
+                view=self,
+            )
+        else:
+            self.message = await messageable.send(
+                content=page if isinstance(page, str) else None,
+                embed=page if isinstance(page, discord.Embed) else MISSING,
+                view=self,
+            )
+        return self.message
+
+    def next_button(self, label: str, color: str = "primary"):
+        self.forward_button.label = label
+        color = getattr(discord.ButtonStyle, color.lower())
+        self.forward_button.style = color
+
+    def back_button(self, label: str, color: str = "primary"):
+        self.previous_button.label = label
+        color = getattr(discord.ButtonStyle, color.lower())
+        self.previous_button.style = color
