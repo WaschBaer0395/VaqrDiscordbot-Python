@@ -73,7 +73,7 @@ class Love(commands.Cog):
         msg = f"% of love between <@{author.id}> and <@{user.id}>"
         if author.id == user.id:
             msg = ' ,Don\'t worry, i bet your mom still loves you'
-            love = 'Suck a Fuck'
+            love = 'Suck a Fuck Percent of Love.. '
             image = 'https://media1.tenor.com/images/77e92c8b0074c06113d04aed22c389e0/tenor.gif'
         else:
             if author.id == 782702698171727902 or user.id == 782702698171727902:  # Amy
