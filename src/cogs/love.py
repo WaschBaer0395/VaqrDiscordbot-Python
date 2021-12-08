@@ -70,9 +70,7 @@ class Love(commands.Cog):
         love = random.randint(0, 100)
         image = None
         special = ''
-        counter = 1
         msg = f"% of love between <@{author.id}> and <@{user.id}>"
-        print("Run number: " + str(counter))
         if author.id == user.id:
             msg = ' ,Don\'t worry, i bet your mom still loves you'
             love = 'Suck a Fuck'
