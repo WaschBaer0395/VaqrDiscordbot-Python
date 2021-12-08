@@ -87,13 +87,6 @@ class Love(commands.Cog):
                         image = 'https://media1.tenor.com/images/31362a548dc7574f80d01a42a637bc93/tenor.gif'
                         break
 
-                elif author.id == 150117644832473088 or user.id == 150117644832473088:  # LdKing
-                    if author.id == 815045139042402344 or user.id == 815045139042402344:  # Molly
-                        love = -200
-                        special = 'Molly gonna come and fuck him up, i swear (she says that like 300 times a day)'
-                        image = 'https://media1.tenor.com/images/e2cde22ec0c747c6f1f5776173ffc252/tenor.gif'
-                        break
-
                 elif author.id == 782702698171727902 or user.id == 782702698171727902:  # Amy
                     if author.id == 815045139042402344 or user.id == 815045139042402344:  # Molly
                         love = 200
