@@ -50,10 +50,10 @@ class PaginatorSession(discord.ui.View):
     async def prev(self, button: discord.ui.Button, interaction: discord.Interaction):
         self.current -= 1
 
-        if self.current == 1:
+        if self.current == 0:
             self.current = self.page_count-1
 
-        page = self.pages[self.current - 1]
+        page = self.pages[self.current]
         self.change_label(self.current)
         await interaction.response.edit_message(
             content=page if isinstance(page, str) else None,
@@ -72,7 +72,7 @@ class PaginatorSession(discord.ui.View):
         if self.current == self.page_count:
             self.current = 0
 
-        page = self.pages[self.current - 1]
+        page = self.pages[self.current]
         self.change_label(self.current)
         await interaction.response.edit_message(
             content=page if isinstance(page, str) else None,
