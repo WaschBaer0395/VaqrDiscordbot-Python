@@ -60,10 +60,8 @@ class Love(commands.Cog):
             'https://cdn.discordapp.com/attachments/823041335678206042/856066323553452062/image0.gif',
             'https://cdn.discordapp.com/attachments/823041335678206042/856066391728062474/image0.gif',
             'https://cdn.discordapp.com/attachments/823041335678206042/856066433108279317/image0.gif',
-            'https://cdn.discordapp.com/attachments/823041335678206042/856066974823874570/image0.gif',
             'https://media1.tenor.com/images/71909d2379b8d7c2e8f2826a0ccffd2f/tenor.gif',
         ]
-
 
     @commands.command()
     async def love(self, ctx, user: commands.Greedy[discord.User]):
@@ -72,63 +70,62 @@ class Love(commands.Cog):
         love = random.randint(0, 100)
         image = None
         special = ''
+        counter = 1
         msg = f"% of love between <@{author.id}> and <@{user.id}>"
-        while True:
-            if author.id == user.id:
-                msg = ' ,Don\'t worry, i bet your mom still loves you'
-                love = 'Suck a Fuck'
-                image = 'https://media1.tenor.com/images/77e92c8b0074c06113d04aed22c389e0/tenor.gif'
-                break
-            else:
-                if author.id == 782702698171727902 or user.id == 782702698171727902:  # Amy
-                    if author.id == 134753100358483968 or user.id == 134753100358483968:  # WaschBaer
-                        love = 199
-                        special = 'as if its meant to be :3'
-                        image = 'https://media1.tenor.com/images/31362a548dc7574f80d01a42a637bc93/tenor.gif'
-                        break
+        print("Run number: " + str(counter))
+        if author.id == user.id:
+            msg = ' ,Don\'t worry, i bet your mom still loves you'
+            love = 'Suck a Fuck'
+            image = 'https://media1.tenor.com/images/77e92c8b0074c06113d04aed22c389e0/tenor.gif'
+        else:
+            if author.id == 782702698171727902 or user.id == 782702698171727902:  # Amy
+                if author.id == 134753100358483968 or user.id == 134753100358483968:  # WaschBaer
+                    love = 199
+                    special = 'as if its meant to be :3'
+                    image = 'https://media1.tenor.com/images/31362a548dc7574f80d01a42a637bc93/tenor.gif'
 
-                elif author.id == 782702698171727902 or user.id == 782702698171727902:  # Amy
-                    if author.id == 815045139042402344 or user.id == 815045139042402344:  # Molly
-                        love = 200
-                        special = 'They do be lovi\'n eachother alot :heart: '
-                        image = 'https://media1.tenor.com/images/20afd6fa304cd271ba789c45132f6755/tenor.gif'
-                        break
+            elif author.id == 782702698171727902 or user.id == 782702698171727902:  # Amy
+                if author.id == 815045139042402344 or user.id == 815045139042402344:  # Molly
+                    love = 200
+                    special = 'They do be lovi\'n eachother alot :heart: '
+                    image = 'https://media1.tenor.com/images/20afd6fa304cd271ba789c45132f6755/tenor.gif'
 
-                elif author.id == 228322335504072705 or user.id == 228322335504072705:  # Jonas
-                    if author.id == 283056284402712576 or user.id == 283056284402712576:  # Coco
-                        love = 169
-                        special = 'I think, we all knew about this 😏'
-                        image = 'https://media.tenor.com/images/fed38b3f86751a4d342ce6dcb7893ca1/tenor.gif'
-                        break
+            elif author.id == 228322335504072705 or user.id == 228322335504072705:  # Jonas
+                if author.id == 283056284402712576 or user.id == 283056284402712576:  # Coco
+                    love = 169
+                    special = 'I think, we all knew about this 😏'
+                    image = 'https://media.tenor.com/images/fed38b3f86751a4d342ce6dcb7893ca1/tenor.gif'
 
-                elif author.id == 129840730565902337 or user.id == 129840730565902337:  # Alice
-                    specialroleid = int(self.conf.get('LOVE', 'SpecialRoleID'))
-                    rolemembers = self.bot.guilds[0].get_role(specialroleid).members
-                    if author.id == 228322335504072705 or user.id == 228322335504072705:  # Jonas
-                        love = '[cannot calculate with such high numbers]'
-                        special = "It is, as if they are meant for eachother :heart:"
-                        image = 'https://media1.tenor.com/images/7d72269b489123ab2c063e2797a17022/tenor.gif'
-                        break
-                    elif author in rolemembers or user in rolemembers:
-                        love = 100
-                        msg = f" of love between <@{author.id}> and <@{user.id}>"
-                        special = "this was 100% a correct calculation, and i was not forced to say that. ᵖˡˢ ˢᵉⁿᵈ ʰᵉˡᵖ"
-                        image = 'https://media1.tenor.com/images/dbc4623f698244ceea09883dbb7afe9a/tenor.gif'
-                        break
-                    else:
-                        break
+            elif author.id == 266805090474655744 or user.id == 266805090474655744:  # Koi
+                if author.id == 134753100358483968 or user.id == 134753100358483968:  # WaschBaer
+                    love = 9000
+                    special = 'a Koi and a Raccoon, obv best friends duh <3'
+                    image = 'https://c.tenor.com/iOHpNtWDPpwAAAAC/best-freaking-friends-forever-best-friends.gif'
+
+            elif author.id == 129840730565902337 or user.id == 129840730565902337:  # Alice
+                specialroleid = int(self.conf.get('LOVE', 'SpecialRoleID'))
+                rolemembers = self.bot.guilds[0].get_role(specialroleid).members
+                if author.id == 228322335504072705 or user.id == 228322335504072705:  # Jonas
+                    love = '[cannot calculate with such high numbers]'
+                    special = "It is, as if they are meant for eachother :heart:"
+                    image = 'https://media1.tenor.com/images/7d72269b489123ab2c063e2797a17022/tenor.gif'
+
+                elif author in rolemembers or user in rolemembers:
+                    love = 100
+                    msg = f" of love between <@{author.id}> and <@{user.id}>"
+                    special = "this was 100% a correct calculation, and i was not forced to say that. ᵖˡˢ ˢᵉⁿᵈ ʰᵉˡᵖ"
+                    image = 'https://media1.tenor.com/images/dbc4623f698244ceea09883dbb7afe9a/tenor.gif'
+
+            if special == '':
+                if love == 69:
+                    special = 'Woah 69 , wink wink'
+                    image = 'https://media1.tenor.com/images/d3cb268f65351cdb5dadb9a889746875/tenor.gif'
+                elif 0 <= love < 40:
+                    image = random.choice(self.dissapointed)
+                elif 40 <= love < 60:
+                    image = random.choice(self.eh)
                 else:
-                    if love == 69:
-                        special = 'Woah 69 , wink wink'
-                        image = 'https://media1.tenor.com/images/d3cb268f65351cdb5dadb9a889746875/tenor.gif'
-                    elif 0 <= love < 40:
-                        image = random.choice(self.dissapointed)
-                    elif 40 <= love < 60:
-                        image = random.choice(self.eh)
-                    else:
-                        image = random.choice(self.love)
-                    break
-
+                    image = random.choice(self.love)
         embed = discord.Embed(description=f"There is {love}" + msg + "\n"
                                           f"{special}",
                               colour=discord.Colour(0xc603fc))
