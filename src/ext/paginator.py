@@ -13,6 +13,7 @@ class PaginatorSession(discord.ui.View):
     a set of embed using reactions."""
 
     def __init__(self, pages):
+        """Paginator, for paginating pages duh"""
         if pages is None:
             pages = []
         super().__init__(timeout=10)

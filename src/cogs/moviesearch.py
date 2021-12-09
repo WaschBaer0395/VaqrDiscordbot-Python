@@ -1,7 +1,5 @@
-import asyncio
 import datetime
 
-import discord
 from discord import Colour
 from discord.ext import commands
 from discord import Embed
@@ -21,6 +19,7 @@ def pop_empty_data(data):
 class MovieSearch(commands.Cog):
 
     def __init__(self, _bot):
+        """Movie command to show imdb embed for a movie, or show"""
         self.bot = _bot
         self.ia = IMDb()
 
