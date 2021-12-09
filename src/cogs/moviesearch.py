@@ -50,6 +50,7 @@ class MovieSearch(commands.Cog):
         if description is not None and len(description) > 350:
             description = description[:337]
             description += " ... [view more]({})".format(str(url))
+        description = '||' + description + '||'
 
         art = movie.get('cover url')
         url = 'https://www.imdb.com/title/tt' + str(movie.get('imdbID'))
