@@ -296,11 +296,12 @@ def format_bot_help(ctx):
 
 
 @bot.command()
-async def ping(ctx):
-    """Pong! Get the bot's response time"""
+async def treats(ctx):
+    """treatos! Get the bot's response time, aka. let lui search for treatos under your bed"""
     em = discord.Embed(color=discord.Color.green())
-    em.title = "Pong!"
-    em.description = f'{bot.latency * 1000} ms'
+    em.title = "Woof!"
+    em.description = f'it took me exactly {bot.latency * 1000} ms \n' \
+                     f'to find the treatos you have been hiding under your bed from me'
     await ctx.send(embed=em)
 
 
