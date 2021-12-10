@@ -13,10 +13,10 @@ class Settings:
         self.cursor = None
 
     def __create_connection(self, filename):
-        """ create a database connection to the SQLite database
-
-                specified by the db_file
-            :param filename: database filename ( without file extension )
+        """
+        create a database connection to the SQLite database
+        specified by the db_file
+        :param filename: database filename ( without file extension )
         """
         try:
             self.conn = psycopg2.connect(os.getenv('POSTGRES_URL'), sslmode='require')

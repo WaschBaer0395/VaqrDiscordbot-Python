@@ -203,7 +203,7 @@ async def on_command_error(ctx, error):
 
 
 def format_command_help(ctx, cmd):
-    '''Format help for a command'''
+    """Format help for a command."""
     color = discord.Color.green()
     em = discord.Embed(color=color, description=cmd.help)
 
@@ -216,7 +216,7 @@ def format_command_help(ctx, cmd):
 
 
 def format_cog_help(ctx, cog):
-    '''Format help for a cog'''
+    """Format help for a cog."""
     signatures = []
     color = discord.Color.green()
     em = discord.Embed(color=color, description=f'*{inspect.getdoc(cog)}*')
@@ -240,7 +240,7 @@ def format_cog_help(ctx, cog):
 
 @bot.command()
 async def help(ctx, *, command: str=None):
-    '''Shows this message'''
+    """Shows this message."""
 
     if command is not None:
         aliases = {
@@ -297,7 +297,7 @@ def format_bot_help(ctx):
 
 @bot.command()
 async def ping(ctx):
-    '''Pong! Get the bot's response time'''
+    """Pong! Get the bot's response time"""
     em = discord.Embed(color=discord.Color.green())
     em.title = "Pong!"
     em.description = f'{bot.latency * 1000} ms'
@@ -307,7 +307,7 @@ async def ping(ctx):
 @bot.command(hidden=True)
 @utils.developer()
 async def reload(ctx, cog):
-    """Reloads a cog"""
+    """Reloads a cog."""
     if cog.lower() == 'all':
         for cog in extensions:
             try:
