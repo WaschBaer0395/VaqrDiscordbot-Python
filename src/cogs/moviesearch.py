@@ -146,21 +146,23 @@ class MovieSearch(commands.Cog):
         embed.set_image(url='https://i.pinimg.com/originals/97/e9/42/97e942ce7fc4e9d4ea6d844a382f251f.gif')
         self.message = await ctx.send(embed=embed)
 
-        movie = Movie(self.ia.get_movie(self.ia.search_movie(args)[0].movieID))
+        movie = Movie(args)
         embed = movie.get_embed()
-        if len(embed.Empty) == 0:
-            embed = Embed(colour=Colour(0xE5E242),
-                          description='No Movie or Show found\n'
-                                      'Please make sure the name is spelled correct\n'
-                                      'or add the year to the title')
-            await self.message.edit(content=None, embed=embed)
-        elif movie.get_kind() == 'Tv Series':
+        #if len(embed.Empty) == 0:
+        #    embed = Embed(colour=Colour(0xE5E242),
+        #                  description='No Movie or Show found\n'
+        #                              'Please make sure the name is spelled correct\n'
+        #                              'or add the year to the title')
+        #   await self.message.edit(content=None, embed=embed)
+        if movie.get_kind() == 'Tv Series':
             print('Embed for TV Series')
             #view = MovieView(movie.get('seasons'))
-            await self.message.edit(content=None, embed=embed)
-        elif movie.get_kind() == 'Movie':
+            await self.message.edit(embed=embed)
+        elif movie.get_kind() == 'Movie' or 'Tv Movie':
             print('Embed for Movie')
-            await self.message.edit(content=None, embed=embed)
+            await self.message.edit(embed=embed)
+        else:
+            await self.message.edit(content='No Movies, or shows found under that name')
 
 
 class Dropdown(discord.ui.Select):
