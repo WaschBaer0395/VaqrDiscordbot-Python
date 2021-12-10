@@ -1,4 +1,5 @@
 import datetime
+import threading
 
 import discord
 from discord import Colour
@@ -10,11 +11,6 @@ bot = commands.Bot('')
 debug = True
 
 
-def printd(item):
-    if debug:
-        print(item)
-
-
 def pop_empty_data(data):
     if data is not None and not str:
         for idx, d in enumerate(data):
@@ -24,58 +20,37 @@ def pop_empty_data(data):
 
 
 class Movie:
-    def __init__(self, movie):
-        printd('-> getting kind')
-        self.kind = movie.get('kind').title()
-        printd('-> getting cover')
-        self.art = movie.get('cover url')
-        printd('-> getting url')
-        self.url = 'https://www.imdb.com/title/tt' + str(movie.get('imdbID'))
-        printd('-> getting year')
-        self.year = movie.get('year')
-        printd('-> getting runtime')
-        self.runtime = int(movie.get('runtimes')[0])
-        printd('-> getting title')
-        self.title = movie.get('title')
-        printd('-> formatting title')
+    def __init__(self, args):
+        self.ia = IMDb()
+        self.search = self.ia.get_movie(self.ia.search_movie(args)[0].movieID)
+        self.kind = self.search.get('kind').title()
+        self.art = self.search.get('cover url')
+        self.url = 'https://www.imdb.com/title/tt' + str(self.search.get('imdbID'))
+        self.year = self.search.get('year')
+        self.runtime = int(self.search.get('runtimes')[0])
+        self.title = self.search.get('title')
         self.format_title(year=self.year, runtime=self.runtime)
-        printd('-> formatting plot')
-        self.description = self.format_description(movie.get('plot'))
-        printd('-> getting seasons')
-        self.seasons = movie.get('seasons')
-        printd('-> getting directors')
-        self.directors = movie.get('directors')
-        printd('-> getting rating')
-        self.score = movie.get('rating')
-        printd('-> getting votes')
-        self.votes = movie.get('votes')
-        printd('-> getting cast')
-        self.cast = movie.get('cast')
-        printd('-> getting writers')
-        self.writers = movie.get('weiters')
-        printd('-> getting genres')
-        self.genres = movie.get('genres')
-        printd('-> done getting information')
+        self.description = self.format_description(self.search.get('plot'))
+        self.seasons = self.search.get('seasons')
+        self.directors = self.search.get('directors')
+        self.score = self.search.get('rating')
+        self.votes = self.search.get('votes')
+        self.cast = self.search.get('cast')
+        self.writers = self.search.get('weiters')
+        self.genres = self.search.get('genres')
 
     def get_embed(self):
-        printd('=> creating embed')
         embed = Embed(title=self.title, url=self.url, colour=Colour(0xE5E242), description=self.description)
-        printd('=> setting thumbnail')
-        embed.set_thumbnail(url=self.art)
-        printd('=> setting title')
-        embed.set_author(name=self.kind)
+        if self.art is not None:
+            embed.set_thumbnail(url=self.art)
+        if self.kind is not None:
+            embed.set_author(name=self.kind)
 
-        printd('=> adding directors')
         embed = self.format_directors(embed=embed)
-        printd('=> adding genres')
         embed = self.format_genres(embed=embed)
-        printd('=> adding score/votes')
         embed = self.format_score(embed=embed)
-        printd('=> adding writers')
         embed = self.format_writers(embed=embed)
-        printd('=> adding cast')
         embed = self.format_cast(embed=embed)
-        printd('=> done creating embed')
         return embed
 
     def get_kind(self):
@@ -103,7 +78,7 @@ class Movie:
                 description += " ... [view more]({})".format(str(self.url))
             return '||' + description + '||'
         else:
-            return 'No plot available on IMDb'
+            return 'No plot available on IMDb\n are you sure you spelled the name correct ?'
 
     def format_directors(self, embed: discord.Embed):
         if self.directors is not None:
@@ -161,7 +136,6 @@ class MovieSearch(commands.Cog):
     def __init__(self, _bot):
         """Movie command to show imdb embed for a movie, or show."""
         self.bot = _bot
-        self.ia = IMDb()
         self.message = None
         self.search = None
 
