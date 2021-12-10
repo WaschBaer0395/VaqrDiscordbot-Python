@@ -323,7 +323,7 @@ def set_birthday_flag(_id):
 def del_birthday(userid):
     statement = ''' DELETE FROM Birthday WHERE UserID=%s'''
     args = (str(userid),)
-    ret, data = DB('Birthdays').execute_statement(statement, args)
+    ret, _ = DB('Birthdays').execute_statement(statement, args)
     return ret
 
 

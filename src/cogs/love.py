@@ -12,7 +12,7 @@ class Love(commands.Cog):
         self.bot = _bot
         self.conf, self.settings = check_config('LOVE', {'SpecialRoleID': '855830021247729675'})
 
-        self.love = [
+        self.best = [
             'https://cdn.discordapp.com/attachments/823041335678206042/855552686484488241/image0.gif',
             'https://cdn.discordapp.com/attachments/823041335678206042/855552752917413898/image0.gif',
             'https://cdn.discordapp.com/attachments/823041335678206042/855552843448451083/image0.gif',
@@ -123,7 +123,7 @@ class Love(commands.Cog):
                 elif 40 <= love < 60:
                     image = random.choice(self.eh)
                 else:
-                    image = random.choice(self.love)
+                    image = random.choice(self.best)
         embed = discord.Embed(description=f"There is {love}" + msg + "\n"
                                           f"{special}",
                               colour=discord.Colour(0xc603fc))
