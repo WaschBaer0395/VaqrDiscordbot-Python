@@ -1,5 +1,4 @@
 import datetime
-import threading
 
 import discord
 from discord import Colour
@@ -21,6 +20,7 @@ def pop_empty_data(data):
 
 class Movie:
     def __init__(self, args):
+        """Movie search command, to find imdb info, formated in an embed for a specific movie or show."""
         self.ia = IMDb()
         self.search = self.ia.get_movie(self.ia.search_movie(args)[0].movieID)
         self.kind = self.search.get('kind').title()
