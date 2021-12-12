@@ -21,6 +21,6 @@ def check_config(name, settings):
 
 
 def save_config(config):
-    with open('settings.ini', 'w+') as configfile:
+    with open('settings.ini', 'w+', encoding="utf-8") as configfile:
         config.write(configfile)
         return True
