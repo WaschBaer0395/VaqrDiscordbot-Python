@@ -19,21 +19,28 @@ class Roles(commands.Cog):
         if len(channel) == 1:
             try:
                 conf, settings = check_config('ROLES', None)
+                # If there is already a channel set
                 if settings.get('channelset') == 'True':
                     channelid = settings.get('init-channelid')
-
+                    # Creating an embed, and sending the inital message, for the confirmer to work with
                     embed = discord.Embed(description=f"The role channel is already set to: \n"
                                                       f"<#{channelid}> - id: `{channelid}`\n"
                                                       f"Do you want to reinitiate the channel to a new one?")
                     message = await ctx.send(embed=embed)
+                    # Starting the confirmer
                     response, message = await ConfirmerSession(page=embed).run(message=message)
+                    # If the user choose to change the channel
                     if response:
+                        # Setting the channel, creating the new embed,
+                        # and editing the Original Message to reflect the Change
                         message = await setchannel(message=message, channel=channel)
                         embed = discord.Embed(description=f"The role channel was set to: \n"
                                                           f"<#{channel[0].id}> - id: `{channel[0].id}`")
                         await message.edit(embed=embed)
+                    # If the user selected Cancel
                     else:
                         embed = discord.Embed(description=f"The role channel was not set")
+                # If no channel was previously set
                 else:
                     embed = discord.Embed(description=f"The role channel was set to: \n"
                                                       f"<#{channel[0].id}> - id: `{channel[0].id}`")
