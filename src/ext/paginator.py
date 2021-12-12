@@ -49,10 +49,10 @@ class PaginatorSession(discord.ui.View):
 
     @discord.ui.button(label="Prev", style=discord.ButtonStyle.red, disabled=False)
     async def prev(self, button: discord.ui.Button, interaction: discord.Interaction):
-        self.current -= 1
-
         if self.current == 0:
-            self.current = self.page_count-1
+            self.current = self.page_count - 1
+        else:
+            self.current -= 1
 
         page = self.pages[self.current]
         self.change_label(self.current)
@@ -68,10 +68,10 @@ class PaginatorSession(discord.ui.View):
 
     @discord.ui.button(label="Next", style=discord.ButtonStyle.red, disabled=False)
     async def next(self, button: discord.ui.Button, interaction: discord.Interaction):
-        self.current += 1
-
         if self.current == self.page_count:
             self.current = 0
+        else:
+            self.current += 1
 
         page = self.pages[self.current]
         self.change_label(self.current)
