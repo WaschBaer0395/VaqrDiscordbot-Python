@@ -19,7 +19,6 @@ def check_config(name, settings):
             print('```error writing config: ' + str(e) + ' ```')
     return config, settings
 
-
 def save_config(config):
     with open('settings.ini', 'w+', encoding="utf-8") as configfile:
         config.write(configfile)
