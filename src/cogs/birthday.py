@@ -266,8 +266,8 @@ class Birthday(commands.Cog):
     async def channel_set(self, ctx, channel, a_channel):
         embed = discord.Embed(title="Channel Confirm", colour=discord.Colour(0x269a78),
                               description="Are you sure you want to Set the BirthdayChannel ?")
-        b_session = ConfirmerSession(ctx, page=embed)
-        response, embedctx = await b_session.run()
+        b_session = ConfirmerSession(page=embed)
+        response, embedctx = await b_session.run(ctx)
         if response is True:
             self.conf.set('BIRTHDAY', 'Init-ChannelName', str(channel.name))
             self.conf.set('BIRTHDAY', 'Init-ChannelID', str(channel.id))

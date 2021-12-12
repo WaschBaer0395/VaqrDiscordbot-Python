@@ -23,6 +23,7 @@ class WrongCount(Exception):
 class Counting(commands.Cog):
 
     def __init__(self, _bot):
+        """Cog for counting from 1 to infinity in a selected channel."""
         self.bot = _bot
         self.db = DB('Counting')
         self.init_db()
@@ -243,8 +244,8 @@ async def channel_set(ctx, config, channel, reassign):
     if reassign:
         embed = discord.Embed(title="Channel Confirm", colour=discord.Colour(0x269a78),
                               description="Are you sure you want to restart counting in a new channel?")
-        c_session = ConfirmerSession(ctx, page=embed)
-        response, embedctx = await c_session.run()
+        c_session = ConfirmerSession(page=embed)
+        response, embedctx = await c_session.run(ctx)
     else:
         embed = discord.Embed(title="Setting New Channel", colour=discord.Colour(0x269a78),
                               description="Setting channel")
