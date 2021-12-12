@@ -1,9 +1,4 @@
 import discord
-from discord import abc
-from discord.interactions import Interaction
-from discord.utils import MISSING
-from discord.commands import ApplicationContext
-from discord.ext.commands import Context
 
 
 class ConfirmerSession:
