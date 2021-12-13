@@ -67,16 +67,16 @@ class Counting(commands.Cog):
             config, self.settings = check_config('COUNTING', self.settings)
             try:
                 if bool(strtobool(config.get('COUNTING', 'channelSet'))):
-                    embedctx, config = await channel_set(ctx, config, channel, reassign=True)
+                    message, config = await channel_set(ctx, config, channel, reassign=True)
                 else:
-                    embedctx, config = await channel_set(ctx, config, channel, reassign=False)
+                    message, config = await channel_set(ctx, config, channel, reassign=False)
                 save_config(config)
             except Exception as e:
                 raise e
 
             embed = discord.Embed(description=f"The counting channel was set to <#{channel[0].id}>"
                                               f" with an id of {channel[0].id}", colour=discord.Colour(0x37b326))
-            await embedctx.edit(embed=embed)
+            await message.edit(embed=embed)
 
     @commands.command(aliases=['c'])
     async def count(self, ctx, args='help'):
@@ -245,20 +245,21 @@ async def channel_set(ctx, config, channel, reassign):
         embed = discord.Embed(title="Channel Confirm", colour=discord.Colour(0x269a78),
                               description="Are you sure you want to restart counting in a new channel?")
         c_session = ConfirmerSession(page=embed)
-        response, embedctx = await c_session.run(ctx)
+        message = await ctx.send(embed=embed)
+        response, message = await c_session.run(message)
     else:
         embed = discord.Embed(title="Setting New Channel", colour=discord.Colour(0x269a78),
                               description="Setting channel")
-        embedctx = await ctx.send(embed=embed)
+        message = await ctx.send(embed=embed)
         response = True
     if response is True:
         config = configset(config, channel[0])
     else:
         embed = discord.Embed(description="The counting channel was not set",
                               colour=discord.Colour(0xbf212f))
-        await embedctx.edit(embed=embed)
-        return embedctx, config
-    return embedctx, config
+        await message.edit(embed=embed)
+        return message, config
+    return message, config
 
 
 def configset(config, channel):

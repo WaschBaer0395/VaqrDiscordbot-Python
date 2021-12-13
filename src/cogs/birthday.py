@@ -143,7 +143,7 @@ class Birthday(commands.Cog):
             return
         else:
             try:
-                embedctx = await self.channel_set(ctx, channel[0], channel[1])
+                message = await self.channel_set(ctx, channel[0], channel[1])
                 save_config(self.conf)
             except Exception as e:
                 await ctx.send('```' + str(e) + '```')
@@ -158,7 +158,7 @@ class Birthday(commands.Cog):
                                               f"the role with `brole`\n"
                                               f"and maybe change the announce message with `bmsgp` for plural\n"
                                               f"and `bmsg` for singular", colour=discord.Colour(0x00FF97))
-            await embedctx.edit(embed=embed)
+            await message.edit(embed=embed)
 
     @commands.command()
     async def bmsgp(self, ctx, *, arg=''):
@@ -267,7 +267,8 @@ class Birthday(commands.Cog):
         embed = discord.Embed(title="Channel Confirm", colour=discord.Colour(0x269a78),
                               description="Are you sure you want to Set the BirthdayChannel ?")
         b_session = ConfirmerSession(page=embed)
-        response, embedctx = await b_session.run(ctx)
+        message = await ctx.send(embed=embed)
+        response, message = await b_session.run(message)
         if response is True:
             self.conf.set('BIRTHDAY', 'Init-ChannelName', str(channel.name))
             self.conf.set('BIRTHDAY', 'Init-ChannelID', str(channel.id))
@@ -277,9 +278,9 @@ class Birthday(commands.Cog):
         else:
             embed = discord.Embed(description=f"The BirthdayChannel was not set",
                                   colour=discord.Colour(0xbf212f))
-            await embedctx.edit(embed=embed)
-            return embedctx
-        return embedctx
+            await message.edit(embed=embed)
+            return message
+        return message
 
     async def remove_birthday_role(self, members_ids):
         role = self.bot.guilds[0].get_role(int(self.conf.get('BIRTHDAY', 'birthdayrole')))

@@ -72,9 +72,9 @@ class Quotes(commands.Cog):
             config, self.settings = check_config('QUOTES', self.settings)
             try:
                 if bool(strtobool(config.get('QUOTES', 'channelSet'))):
-                    embedctx, config = await channel_set(ctx, config, channel, reassign=True)
+                    message, config = await channel_set(ctx, config, channel, reassign=True)
                 else:
-                    embedctx, config = await channel_set(ctx, config, channel, reassign=False)
+                    message, config = await channel_set(ctx, config, channel, reassign=False)
                 save_config(config)
             except Exception as e:
                 await ctx.send(
@@ -84,7 +84,7 @@ class Quotes(commands.Cog):
             embed = discord.Embed(description=f"The Quotes channel was set to <#{channel[0].id}>"
                                               f" with an id of {channel[0].id}", colour=discord.Colour(0x37b326))
             await self.introduction(channel[0])
-            await embedctx.edit(embed=embed)
+            await message.edit(embed=embed)
 
     async def introduction(self, channel):
         message = f'Hello, my name is {self.bot.user.name} , and i am the Quote-Master.\n' \
@@ -224,21 +224,22 @@ async def channel_set(ctx, config, channel, reassign):
     if reassign:
         embed = discord.Embed(title="Channel Confirm", colour=discord.Colour(0x269a78),
                               description="Are you sure you want the Bot to post the Quotes in the selected channel ?")
-        c_session = ConfirmerSession(ctx, page=embed)
-        response, embedctx = await c_session.run()
+        c_session = ConfirmerSession(ctx)
+        message = await ctx.send(embed=embed)
+        response, message = await c_session.run(message)
     else:
         embed = discord.Embed(title="Setting New Channel", colour=discord.Colour(0x269a78),
                               description="Setting channel")
-        embedctx = await ctx.send(embed=embed)
+        message = await ctx.send(embed=embed)
         response = True
     if response is True:
         config = configset(config, channel[0])
     else:
         embed = discord.Embed(description=f"The Quotes channel was not set",
                               colour=discord.Colour(0xbf212f))
-        await embedctx.edit(embed=embed)
-        return embedctx, config
-    return embedctx, config
+        await message.edit(embed=embed)
+        return message, config
+    return message, config
 
 
 def configset(config, channel):
