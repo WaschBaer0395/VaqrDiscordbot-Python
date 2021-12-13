@@ -207,7 +207,7 @@ class RoleButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        """This function will be called any time a user clicks on this button."""
+        """ Function that will be called any time a user clicks on this button."""
         # Parameters
         # ----------
         # interaction : discord.Interaction
