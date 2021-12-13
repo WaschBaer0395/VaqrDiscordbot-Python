@@ -64,9 +64,8 @@ class Roles(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         """This function is called every time the bot restarts."""
-        """If a view was already created before (with the same custom IDs for buttons)
-        it will be loaded and the bot will start watching for button clicks again.
-        """
+        # If a view was already created before (with the same custom IDs for buttons)
+        # it will be loaded and the bot will start watching for button clicks again.
 
         # Create something here, that searches for messages with buttons on them,
         # and get the matching views to add them to the bot!
@@ -208,12 +207,11 @@ class RoleButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        """This function will be called any time a user clicks on this button"""
-        """Parameters
-        ----------
-        interaction : discord.Interaction
-            The interaction object that was created when the user clicked on the button
-        """
+        """This function will be called any time a user clicks on this button."""
+        # Parameters
+        # ----------
+        # interaction : discord.Interaction
+        #    The interaction object that was created when the user clicked on the button
 
         # figure out who clicked the button
         user = interaction.user
