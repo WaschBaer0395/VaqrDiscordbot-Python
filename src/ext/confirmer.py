@@ -10,11 +10,11 @@ class ConfirmerSession:
         super().__init__()
         self.page = page  # the list of embeds list[discord.Embed, discord.Embed]
 
-    async def run(self, ctx):
+    async def run(self, message):
         """Asks the user a question to confirm something."""
         # We create the view and assign it to a variable so we can wait for it later.
         view = Confirm()
-        message = await ctx.send(embed=self.page, view=view)
+        message = await message.edit(embed=self.page, view=view)
         # Wait for the View to stop listening for input...
         await view.wait()
         message = await message.edit(embed=self.page, view=view)
