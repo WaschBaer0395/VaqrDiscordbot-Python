@@ -21,7 +21,7 @@ class Roles(commands.Cog):
         """<Channel> Setup the channel to display Role selections."""
         if len(channel) == 1:
             try:
-                conf, settings = check_config('ROLES', None)
+                _, settings = check_config('ROLES', None)
                 # If there is already a channel set
                 if settings.get('channelset') == 'True':
                     channelid = settings.get('init-channelid')
@@ -63,8 +63,8 @@ class Roles(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        """This function is called every time the bot restarts.
-        If a view was already created before (with the same custom IDs for buttons)
+        """This function is called every time the bot restarts."""
+        """If a view was already created before (with the same custom IDs for buttons)
         it will be loaded and the bot will start watching for button clicks again.
         """
 
@@ -200,9 +200,7 @@ async def setchannel(message, channel):
 
 class RoleButton(discord.ui.Button):
     def __init__(self, role: discord.Role):
-        """
-        A button for one role. `custom_id` is needed for persistent views.
-        """
+        """A button for one role. `custom_id` is needed for persistent views."""
         super().__init__(
             label=role.name,
             style=discord.enums.ButtonStyle.grey,
@@ -210,8 +208,8 @@ class RoleButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        """This function will be called any time a user clicks on this button
-        Parameters
+        """This function will be called any time a user clicks on this button"""
+        """Parameters
         ----------
         interaction : discord.Interaction
             The interaction object that was created when the user clicked on the button
@@ -245,7 +243,7 @@ class RoleButton(discord.ui.Button):
 class ReactView(discord.ui.View):
 
     def __init__(self, components: list):
-        """ReactView init."""
+        """Reactview init."""
         super().__init__()
         for c in components:
             self.add_item(RoleButton(c))
