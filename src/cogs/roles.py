@@ -1,9 +1,7 @@
 import json
-
 import discord
-from discord import Colour
+import validators
 from discord.ext import commands
-
 from ext.config import save_config, check_config
 from ext.confirmer import ConfirmerSession
 
@@ -24,7 +22,7 @@ class Roles(commands.Cog):
         """<Channel> Setup the channel to display Role selections."""
         if len(channel) == 1:
             try:
-                conf, settings = check_config('ROLES', None)
+                _, settings = check_config('ROLES', None)
                 # If there is already a channel set
                 if settings.get('channelset') == 'True':
                     channelid = settings.get('init-channelid')
@@ -64,12 +62,33 @@ class Roles(commands.Cog):
 
         await self.pronouns(ctx)
 
+    @commands.command(aliases=['rcreate'])
+    async def reac_message_create(self, ctx, *, args):
+        description = ''
+        banner = ''
+        embeds = []
+        args = args.split('\n')
+        for idx, a in enumerate(args):
+            if not validators.url(a):
+                description += a + '\n'
+            else:
+                banner = a
+        _, settings = check_config('ROLES')
+        roleschannelid = settings.get('init-channelid')
+        channel = self.bot.get_channel(int(roleschannelid))
+        bannerembed = discord.Embed(color=discord.Colour.blurple())
+        bannerembed.set_image(url=banner)
+        textembed = discord.Embed(color=discord.Colour.blurple())
+        textembed.add_field(name='Roles', value=description)
+        embeds.append(bannerembed)
+        embeds.append(textembed)
+        await channel.send(embeds=embeds)
+
     @commands.Cog.listener()
     async def on_ready(self):
-        """This function is called every time the bot restarts.
-        If a view was already created before (with the same custom IDs for buttons)
-        it will be loaded and the bot will start watching for button clicks again.
-        """
+        """This function is called every time the bot restarts."""
+        # If a view was already created before (with the same custom IDs for buttons)
+        # it will be loaded and the bot will start watching for button clicks again.
 
         # Create something here, that searches for messages with buttons on them,
         # and get the matching views to add them to the bot!
@@ -78,7 +97,7 @@ class Roles(commands.Cog):
         # we recreate the view as we did in the /post command
         view = discord.ui.View(timeout=None)
         # make sure to set the guild ID here to whatever server you want the buttons in
-        conf, settings = check_config('ROLES')
+        _, settings = check_config('ROLES')
         role_ids = settings.get('roles')
         role_ids = json.loads(role_ids)
         guild = self.bot.get_guild(835033905978802216)
@@ -203,9 +222,7 @@ async def setchannel(message, channel):
 
 class RoleButton(discord.ui.Button):
     def __init__(self, role: discord.Role):
-        """
-        A button for one role. `custom_id` is needed for persistent views.
-        """
+        """A button for one role. `custom_id` is needed for persistent views."""
         super().__init__(
             label=role.name,
             style=discord.enums.ButtonStyle.grey,
@@ -213,12 +230,11 @@ class RoleButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        """This function will be called any time a user clicks on this button
-        Parameters
-        ----------
-        interaction : discord.Interaction
-            The interaction object that was created when the user clicked on the button
-        """
+        """ Function that will be called any time a user clicks on this button."""
+        # Parameters
+        # ----------
+        # interaction : discord.Interaction
+        #    The interaction object that was created when the user clicked on the button
 
         # figure out who clicked the button
         user = interaction.user
@@ -246,7 +262,9 @@ class RoleButton(discord.ui.Button):
 
 
 class ReactView(discord.ui.View):
+
     def __init__(self, components: list):
+        """Reactview init."""
         super().__init__()
         for c in components:
             self.add_item(RoleButton(c))
