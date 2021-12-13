@@ -1,9 +1,6 @@
 import json
-
 import discord
-from discord import Colour
 from discord.ext import commands
-
 from ext.config import save_config, check_config
 from ext.confirmer import ConfirmerSession
 
@@ -78,7 +75,7 @@ class Roles(commands.Cog):
         # we recreate the view as we did in the /post command
         view = discord.ui.View(timeout=None)
         # make sure to set the guild ID here to whatever server you want the buttons in
-        conf, settings = check_config('ROLES')
+        _, settings = check_config('ROLES')
         role_ids = settings.get('roles')
         role_ids = json.loads(role_ids)
         guild = self.bot.get_guild(835033905978802216)
@@ -246,7 +243,9 @@ class RoleButton(discord.ui.Button):
 
 
 class ReactView(discord.ui.View):
+
     def __init__(self, components: list):
+        """ReactView init."""
         super().__init__()
         for c in components:
             self.add_item(RoleButton(c))
