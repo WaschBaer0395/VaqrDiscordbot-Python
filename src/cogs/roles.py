@@ -19,7 +19,7 @@ class Roles(commands.Cog):
 
     @commands.command(aliases=['rinit', 'initroles', 'initr'])
     async def rolesinit(self, ctx, channel: commands.Greedy[discord.TextChannel]):
-        """<Channel> Setup the channel to display Role selections."""
+        """<#channel> setup role channel."""
         if len(channel) == 1:
             try:
                 _, settings = check_config('ROLES', None)
@@ -64,25 +64,53 @@ class Roles(commands.Cog):
 
     @commands.command(aliases=['rcreate'])
     async def reac_message_create(self, ctx, *, args):
+        """<title> <text> <opt.banner url> create a react message """
         description = ''
-        banner = ''
+        title = ''
+        banner = None
         embeds = []
+
+        # Split the given arguments into the pieces used to create the embeds
+        # Missing an error handling incase the format for an embed is wrong!
+        # ToDo: Create error handling for this method!
         args = args.split('\n')
         for idx, a in enumerate(args):
-            if not validators.url(a):
+            if idx == 0:
+                title = a
+            elif not validators.url(a):
                 description += a + '\n'
             else:
                 banner = a
+
+        # Check the settings.ini if there is already a list of Embeds in the Role channel
         _, settings = check_config('ROLES')
-        roleschannelid = settings.get('init-channelid')
-        channel = self.bot.get_channel(int(roleschannelid))
-        bannerembed = discord.Embed(color=discord.Colour.blurple())
-        bannerembed.set_image(url=banner)
-        textembed = discord.Embed(color=discord.Colour.blurple())
-        textembed.add_field(name='Roles', value=description)
-        embeds.append(bannerembed)
+        channel = self.bot.get_channel(int(settings.get('init-channelid')))
+
+        # Incase a Banner was set for the Embed message
+        if banner is not None:
+            bannerembed = discord.Embed(color=discord.Colour.blurple())
+            bannerembed.set_image(url=banner)
+            embeds.append(bannerembed)
+        # Add the message itself as an embed
+        textembed = discord.Embed(title=title, color=discord.Colour.blurple(), description=description)
         embeds.append(textembed)
-        await channel.send(embeds=embeds)
+
+        message = await channel.send(embeds=embeds)
+        conf, settings = check_config('ROLES')
+        msettings = settings.get('messages')
+        messages = []
+        if msettings is None:
+            messages.append(message.id)
+        else:
+            messages = json.loads(msettings)
+            messages.append(message.id)
+        conf.set('ROLES', 'messages', str(list_to_json(messages)))
+        save_config(conf)
+
+    @commands.command()
+    async def add_reaction(self, ctx, *args):
+        """<@role> <reactname> -> select message to add to"""
+        print('test')
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -162,7 +190,7 @@ def check_settings_for_roles(roles):
     # creating a list of the roleids to be added
     roleids = []
     for role in roles:
-        roleids.append(str(role.id))
+        roleids.append(role.id)
     # checking if any of the roleids are missing in the settings.ini
     list_of_roles = settings.get('roles')
 
@@ -173,8 +201,8 @@ def check_settings_for_roles(roles):
     else:
         list_of_roles = json.loads(list_of_roles)
         for role in roles:
-            if str(role.id) not in list_of_roles:
-                list_of_roles.append(str(role.id))
+            if role.id not in list_of_roles:
+                list_of_roles.append(role.id)
         roleids = list_to_json(list_of_roles)
 
     # write into the config
