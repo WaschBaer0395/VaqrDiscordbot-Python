@@ -25,7 +25,7 @@ class Counting(commands.Cog):
     def __init__(self, _bot):
         """Cog for counting from 1 to infinity in a selected channel."""
         self.bot = _bot
-        self.db = DB('Counting')
+        self.db = DB('COUNTING')
         self.init_db()
         self.settings = {
             'channelSet': 'False',
@@ -149,7 +149,7 @@ class Counting(commands.Cog):
 
     async def show_rank(self, ctx):
         statement = ''' SELECT UserID,UserName,Counts,MissCounts,Level,Experience
-                        FROM Counting 
+                        FROM COUNTING
                         WHERE UserID=%s'''
         args = (ctx.author.id,)
         ret = self.db.execute_statement(statement, args)[1][0]
@@ -166,7 +166,7 @@ class Counting(commands.Cog):
         await ctx.send(embed=embed)
 
     def check_id(self, userid):
-        statement = '''SELECT EXISTS(SELECT 1 FROM Counting WHERE UserID=%s)'''
+        statement = '''SELECT EXISTS(SELECT 1 FROM COUNTING WHERE UserID=%s)'''
         count = self.db.execute_statement(statement, (userid,))
         if count[1][0][0] >= 1:
             return True
@@ -174,18 +174,18 @@ class Counting(commands.Cog):
             return False
 
     def reg_user(self, author):
-        statement = '''INSERT INTO Counting (UserID,UserName,Discriminator,Nickname,Counts,MissCounts,Experience,Level)
+        statement = '''INSERT INTO COUNTING (UserID,UserName,Discriminator,Nickname,Counts,MissCounts,Experience,Level)
                     VALUES(%s,%s,%s,%s,%s,'0','0','1')'''
         args = (int(author.id), str(author.display_name), int(author.discriminator), str(author.nick), 1)
         self.db.execute_statement(statement, args)
 
     def add_count(self, authorid, xp_bonus):
-        statement = '''SELECT * FROM Counting WHERE UserID = %s'''
+        statement = '''SELECT * FROM COUNTING WHERE UserID = %s'''
         args = (str(authorid),)
         ret = self.db.execute_statement(statement, args)[1][0]
         count = ret[4]
         curr_exp = ret[6]
-        statement = '''UPDATE Counting SET Counts=%s WHERE UserID=%s'''
+        statement = '''UPDATE COUNTING SET Counts=%s WHERE UserID=%s'''
         args = (str(count + 1), str(authorid),)
         self.db.execute_statement(statement, args)
         return self.add_xp(curr_exp, authorid, xp_bonus)
@@ -194,7 +194,7 @@ class Counting(commands.Cog):
         newexp = curr_exp + 10 * xp_bonus
         oldlevel = calc_lvl(curr_exp)
         newlevel = calc_lvl(newexp)
-        statement = '''UPDATE Counting Set Experience=%s, Level=%s WHERE UserID=%s'''
+        statement = '''UPDATE COUNTING Set Experience=%s, Level=%s WHERE UserID=%s'''
         args = (str(newexp), str(newlevel), str(authorid),)
         self.db.execute_statement(statement, args)
         if newlevel != oldlevel:
@@ -204,10 +204,10 @@ class Counting(commands.Cog):
     def wrong_count(self, authorid):
         if not self.check_id(authorid):
             return
-        statement = '''SELECT * FROM Counting WHERE UserID = %s'''
+        statement = '''SELECT * FROM COUNTING WHERE UserID = %s'''
         args = (str(authorid),)
         ret = self.db.execute_statement(statement, args)
-        statement = '''UPDATE Counting SET MissCounts=%s WHERE UserID=%s'''
+        statement = '''UPDATE COUNTING SET MissCounts=%s WHERE UserID=%s'''
         args = (str(ret[1][0][5] + 1), str(authorid))
         self.db.execute_statement(statement, args)
 
@@ -220,7 +220,7 @@ class Counting(commands.Cog):
     async def get_top10(self, ctx):
         statement = '''
                     SELECT UserID,UserName,Counts,MissCounts,Level,Experience
-                    FROM Counting 
+                    FROM COUNTING 
                     ORDER BY Counts DESC LIMIT 10'''
         ret = self.db.execute_statement(statement)[1]
         description = ''
@@ -245,20 +245,21 @@ async def channel_set(ctx, config, channel, reassign):
         embed = discord.Embed(title="Channel Confirm", colour=discord.Colour(0x269a78),
                               description="Are you sure you want to restart counting in a new channel?")
         c_session = ConfirmerSession(page=embed)
-        response, embedctx = await c_session.run(ctx)
+        message = await ctx.send(embed=embed)
+        response, message = await c_session.run(message=message)
     else:
         embed = discord.Embed(title="Setting New Channel", colour=discord.Colour(0x269a78),
                               description="Setting channel")
-        embedctx = await ctx.send(embed=embed)
+        message = await ctx.send(embed=embed)
         response = True
     if response is True:
         config = configset(config, channel[0])
     else:
         embed = discord.Embed(description="The counting channel was not set",
                               colour=discord.Colour(0xbf212f))
-        await embedctx.edit(embed=embed)
-        return embedctx, config
-    return embedctx, config
+        await message.edit(embed=embed)
+        return message, config
+    return message, config
 
 
 def configset(config, channel):
@@ -284,5 +285,5 @@ def calc_exp(curr_level):
     return int(exp)
 
 
-def setup(_bot):
-    bot.add_cog(Counting(_bot))
+def setup(bot):
+    bot.add_cog(Counting(bot))
