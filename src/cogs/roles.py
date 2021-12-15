@@ -2,6 +2,8 @@ import json
 import discord
 import validators
 from discord.ext import commands
+from discord.utils import get
+
 from ext.config import save_config, check_config
 from ext.confirmer import ConfirmerSession
 
@@ -9,6 +11,7 @@ bot = commands.Bot('')
 pronouns_list = ['❤️ he ❤️', '🧡 him 🧡', '💛 she 💛', '💚 her 💚', '💙 they 💙',
                  '💜 them 💜', '🖤 it 🖤', '🤍 its 🤍', '🤎 any 🤎', '🏳️‍🌈ask me🏳️‍🌈']
 divider_pronouns = '⚫️Pronouns:                ⁣'
+role_color = discord.Colour.blurple()
 
 
 class Roles(commands.Cog):
@@ -88,11 +91,11 @@ class Roles(commands.Cog):
 
         # Incase a Banner was set for the Embed message
         if banner is not None:
-            bannerembed = discord.Embed(color=discord.Colour.blurple())
+            bannerembed = discord.Embed(color=role_color)
             bannerembed.set_image(url=banner)
             embeds.append(bannerembed)
         # Add the message itself as an embed
-        textembed = discord.Embed(title=title, color=discord.Colour.blurple(), description=description)
+        textembed = discord.Embed(title=title, color=role_color, description=description)
         embeds.append(textembed)
 
         message = await channel.send(embeds=embeds)
@@ -108,9 +111,30 @@ class Roles(commands.Cog):
         save_config(conf)
 
     @commands.command()
-    async def add_reaction(self, ctx, *args):
+    async def add_reaction(self, ctx, role: discord.Role, *args):
         """<@role> <reactname> -> select message to add to"""
-        print('test')
+        # ToDo: add error handling incase the role does not exsist
+        if len(args) == 0:
+            embed = discord.Embed(color=discord.Colour.red(), description='Error, please give the Role a name!')
+            view = None
+        else:
+            description = 'Please select a message to add the reaction to'
+            items = []
+            _, settings = check_config('ROLES')
+            messageids = settings.get('messages')
+            messageids = json.loads(messageids)
+            channelid = settings.get('init-channelid')
+            channel = await ctx.guild.fetch_channel(channelid)
+            for messageid in messageids:
+                message = await channel.fetch_message(messageid)
+                for em in message.embeds:
+                    if em.title is not discord.Embed.Empty:
+                        d = {'title': em.title, 'id': messageid}
+                        items.append(d)
+            embed = discord.Embed(color=role_color, description=description)
+            message = await ctx.send(embed=embed)
+            view = DropdownView(options=items, channel=channel, role=role, name=args[0], ctx=ctx, message=message)
+            await message.edit(embed=embed, view=view)
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -221,7 +245,7 @@ def list_to_json(items):
 
 
 async def channel_set(message, channel, conf):
-    embed = discord.Embed(title="Channel Confirm", colour=discord.Colour(0x269a78),
+    embed = discord.Embed(title="Channel Confirm", colour=role_color,
                           description="Are you sure you want to set the roles channel to:\n"
                                       "<#{}> ?".format(channel.id))
     response, message = await ConfirmerSession(page=embed).run(message=message)
@@ -231,7 +255,7 @@ async def channel_set(message, channel, conf):
         conf.set('ROLES', 'channelSet', 'True')
     else:
         embed = discord.Embed(description=f"The roles channel was not set",
-                              colour=discord.Colour(0xbf212f))
+                              colour=role_color)
         await message.edit(embed=embed)
         return message, None
     return message, conf
@@ -249,10 +273,12 @@ async def setchannel(message, channel):
 
 
 class RoleButton(discord.ui.Button):
-    def __init__(self, role: discord.Role):
+    def __init__(self, role: discord.Role, name=None):
         """A button for one role. `custom_id` is needed for persistent views."""
+        if name is None:
+            name = role.name
         super().__init__(
-            label=role.name,
+            label=name,
             style=discord.enums.ButtonStyle.grey,
             custom_id=str(role.id),
         )
@@ -291,11 +317,99 @@ class RoleButton(discord.ui.Button):
 
 class ReactView(discord.ui.View):
 
-    def __init__(self, components: list):
+    def __init__(self, components: list, names=None):
         """Reactview init."""
         super().__init__()
-        for c in components:
-            self.add_item(RoleButton(c))
+        for idx, c in enumerate(components):
+            self.add_item(RoleButton(c, name=names[idx]))
+
+
+class AddReactionsList(discord.ui.Select):
+
+    def __init__(self, options: list, channel, role, name, guild, message):
+        # Set the options that will be presented inside the dropdown
+
+        # The placeholder is what will be shown when no option is chosen
+        # The min and max values indicate we can only pick one of the three options
+        # The options parameter defines the dropdown options. We defined this above
+        _, settings = check_config('ROLES')
+        messageids = settings.get('messages')
+        messageids = json.loads(messageids)
+        self.channel = channel
+        self.role = role
+        self.name = name
+        self.guild = guild
+        self.selection_message = message
+
+        opt = []
+        for item in options:
+            opt.append(discord.SelectOption(label=item['title'], value=item['id']))
+
+        super().__init__(
+            placeholder="Select a message",
+            min_values=1,
+            max_values=1,
+            options=opt,
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        # Use the interaction object to send a response message containing
+        # the user's favourite colour or choice. The self object refers to the
+        # Select object, and the values attribute gets a list of the user's
+        # selected options. We only want the first one.
+        message = await self.channel.fetch_message(self.values[0])
+        components = [self.role]
+        edit = False
+        names = [self.name]
+        if len(message.components) == 0:
+            view = ReactView(components, names=names)
+        else:
+            view = discord.ui.View.from_message(message)
+            roles = []
+            names = []
+            for child in view.children:
+                role = get(self.guild.roles, id=int(child.__getattribute__('custom_id')))
+                if role.id == self.role.id:
+                    edit = True
+                    names.append(self.name)
+                else:
+                    names.append(child.__getattribute__('label'))
+                roles.append(role)
+
+            if not edit:
+                roles.append(self.role)
+                names.append(self.name)
+            view = ReactView(roles, names=names)
+
+        embeds = message.embeds
+        conf, settings = check_config('ROLES')
+        roles = settings.get('roles')
+        roles = json.loads(roles)
+        roles.append(self.role.id)
+        roles = list_to_json(roles)
+        conf.set('ROLES', 'roles', roles)
+        save_config(conf)
+        await message.edit(embeds=embeds, view=view)
+        embed = discord.Embed(color=role_color, description='Button has been added/edited')
+        await self.selection_message.edit(embed=embed, view=None)
+
+
+class DropdownView(discord.ui.View):
+
+    def __init__(self, options: list, channel, role, name, ctx, message):
+        """Dropdownview init."""
+        super().__init__()
+        guild = ctx.guild
+        self.add_item(
+            item=AddReactionsList(
+                options=options,
+                channel=channel,
+                role=role,
+                name=name,
+                guild=guild,
+                message=message
+            )
+        )
 
 
 def setup(bot):
